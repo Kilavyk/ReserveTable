@@ -142,13 +142,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 LOGIN_REDIRECT_URL = "home:home"  # Куда перенаправлять после входа
 LOGOUT_REDIRECT_URL = "home:home"  # Куда перенаправлять после выхода
 
-CACHE_ENABLED = True
-if CACHE_ENABLED:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": "redis://localhost:6379",
-        }
-    }
 
 # DOMAIN = "localhost:8000"
