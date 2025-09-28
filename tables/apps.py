@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class UserConfig(AppConfig):
+class TablesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "Users"
+    name = "tables"
