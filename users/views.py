@@ -5,10 +5,11 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-import secrets
+
 
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
 from .models import CustomUser
+from bookings.models import Booking
 
 
 def custom_login_view(request):
@@ -118,8 +119,6 @@ def custom_logout_view(request):
 @login_required
 def profile_view(request):
     """Отображает страницу личного кабинета пользователя."""
-    # Импортируем здесь, чтобы избежать циклического импорта
-    from bookings.models import Booking
 
     # Получаем все бронирования пользователя, отсортированные по дате создания (новые сверху)
     bookings = Booking.objects.filter(user=request.user).select_related('table').order_by('-created_at')
@@ -159,18 +158,6 @@ def profile_edit_view(request):
             # Обработка загрузки новой фотографии
             if 'photo' in request.FILES:
                 photo_file = request.FILES['photo']
-
-                # Проверяем размер файла (максимум 5MB)
-                if photo_file.size > 5 * 1024 * 1024:
-                    messages.error(request, 'Размер файла не должен превышать 5MB.', extra_tags='profile')
-                    return redirect('users:profile')
-
-                # Проверяем тип файла
-                allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-                if photo_file.content_type not in allowed_types:
-                    messages.error(request, 'Допустимы только файлы изображений (JPEG, PNG, GIF, WebP).',
-                                   extra_tags='profile')
-                    return redirect('users:profile')
 
                 # Удаляем старое фото если оно есть
                 if user.photo:

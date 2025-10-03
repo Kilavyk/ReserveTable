@@ -62,11 +62,7 @@ class UserProfileForm(BaseFormStyle, forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('first_name', 'last_name', 'photo')
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'photo': forms.FileInput(attrs={'class': 'form-control'}),
-        }
+
 
     def clean_photo(self):
         photo = self.cleaned_data.get('photo')
@@ -76,8 +72,8 @@ class UserProfileForm(BaseFormStyle, forms.ModelForm):
                 raise forms.ValidationError('Размер файла не должен превышать 5MB.')
 
             # Проверка типа файла
-            allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            allowed_types = ['image/jpeg', 'image/png']
             if photo.content_type not in allowed_types:
-                raise forms.ValidationError('Допустимы только файлы изображений (JPEG, PNG, GIF, WebP).')
+                raise forms.ValidationError('Допустимы только файлы изображений (JPEG, PNG).')
 
         return photo
