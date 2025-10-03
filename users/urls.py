@@ -11,4 +11,5 @@ urlpatterns = [
     path('logout/', views.custom_logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
     path('profile/edit/', views.profile_edit_view, name='profile_edit'),
+    path('verify/<str:token>/', views.email_verification, name='email_verification'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

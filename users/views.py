@@ -1,94 +1,126 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db import IntegrityError
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+import secrets
+
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
 from .models import CustomUser
 
 
 def custom_login_view(request):
     if request.method == 'POST':
-        phone_number = request.POST.get('phone_number')
-        password = request.POST.get('password')
+        form = CustomAuthenticationForm(request, data=request.POST)
         next_url = request.POST.get('next', '')
 
-        user = authenticate(request, phone_number=phone_number, password=password)
+        if form.is_valid():
+            email = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
 
-        if user is not None:
-            login(request, user)
-            messages.success(request, 'Вы успешно вошли в систему.')
+            user = authenticate(request, email=email, password=password)
 
-            # Перенаправляем на next URL или на главную
-            if next_url:
-                return redirect(next_url)
-            return redirect('core:index')
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    messages.success(request, 'Вы успешно вошли в систему.')
+
+                    if next_url:
+                        return redirect(next_url)
+                    return redirect('core:index')
+                else:
+                    messages.error(request, 'Ваш аккаунт не активирован. Проверьте вашу почту для подтверждения email.')
+            else:
+                messages.error(request, 'Неверный email или пароль.')
         else:
-            messages.error(request, 'Неверный номер телефона или пароль.')
-            # Возвращаем на ту же страницу с открытым модальным окном авторизации
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
+            messages.error(request, 'Неверный email или пароль.')
+
+        return redirect(request.META.get('HTTP_REFERER', 'core:index'))
 
     return redirect('core:index')
 
 
 def custom_register_view(request):
     if request.method == 'POST':
-        phone_number = request.POST.get('phone_number')
-        password = request.POST.get('password')
-        password_confirm = request.POST.get('password_confirm')
+        form = CustomUserCreationForm(request.POST)
         next_url = request.POST.get('next', '')
 
-        # Валидация данных
-        if not phone_number or not password:
-            messages.error(request, 'Номер телефона и пароль обязательны для заполнения.')
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_active = False  # Пользователь не активен до верификации email
+            token = user.generate_verification_token()
+            user.save()
 
-        if password != password_confirm:
-            messages.error(request, 'Пароли не совпадают.')
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
+            # Отправка email для верификации
+            try:
+                send_mail(
+                    subject="Подтверждение регистрации",
+                    message="",
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[user.email],
+                    html_message=render_to_string(
+                        "users/verification_email.html",
+                        {
+                            "user": user,
+                            "domain": getattr(settings, 'DOMAIN', request.get_host()),
+                            "token": token,
+                        },
+                    ),
+                )
+                messages.success(
+                    request,
+                    "Регистрация прошла успешно! Пожалуйста, проверьте вашу почту для подтверждения email."
+                )
+            except Exception as e:
+                messages.error(
+                    request,
+                    "Регистрация прошла успешно, но не удалось отправить письмо подтверждения. "
+                    "Свяжитесь с администрацией."
+                )
+                print(f"Ошибка отправки email: {e}")
 
-        if len(password) < 6:
-            messages.error(request, 'Пароль должен содержать не менее 6 символов.')
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
-
-        # Создание пользователя
-        try:
-            user = CustomUser.objects.create_user(
-                phone_number=phone_number,
-                password=password
-            )
-            login(request, user)
-            messages.success(request, 'Регистрация прошла успешно!')
-
-            # Перенаправляем на next URL или на главную
             if next_url:
                 return redirect(next_url)
             return redirect('core:index')
+        else:
+            # Передаем ошибки формы в сообщения
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{error}")
 
-        except IntegrityError:
-            messages.error(request, 'Данный номер телефона уже зарегистрирован.')
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
-        except Exception as e:
-            messages.error(request, 'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз.')
-            print(f"Ошибка регистрации: {e}")
             return redirect(request.META.get('HTTP_REFERER', 'core:index'))
 
     return redirect('core:index')
 
 
+def email_verification(request, token):
+    """Верификация email пользователя"""
+    user = get_object_or_404(CustomUser, verification_token=token)
+    user.is_active = True
+    user.verification_token = None  # Очищаем токен после использования
+    user.save()
+
+    messages.success(
+        request,
+        "Ваш email успешно подтверждён! Теперь вы можете войти в систему."
+    )
+    return redirect('users:login')
+
+
 def custom_logout_view(request):
-    from django.contrib.auth import logout
     logout(request)
     messages.success(request, 'Вы успешно вышли из системы.')
     return redirect('core:index')
 
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from bookings.models import Booking
-
-
 @login_required
 def profile_view(request):
     """Отображает страницу личного кабинета пользователя."""
+    # Импортируем здесь, чтобы избежать циклического импорта
+    from bookings.models import Booking
+
     # Получаем все бронирования пользователя, отсортированные по дате создания (новые сверху)
     bookings = Booking.objects.filter(user=request.user).select_related('table').order_by('-created_at')
 
@@ -113,22 +145,21 @@ def profile_edit_view(request):
     if request.method == 'POST':
         try:
             user = request.user
-            first_name = request.POST.get('first_name', '').strip()
-            last_name = request.POST.get('last_name', '').strip()
-            delete_photo = request.POST.get('delete_photo') == 'true'
 
-            # Обновляем данные пользователя
-            user.first_name = first_name
-            user.last_name = last_name
+            # Обновляем текстовые поля
+            user.first_name = request.POST.get('first_name', '').strip()
+            user.last_name = request.POST.get('last_name', '').strip()
 
             # Обработка удаления фотографии
+            delete_photo = request.POST.get('delete_photo') == 'true'
             if delete_photo and user.photo:
                 user.photo.delete(save=False)
                 user.photo = None
 
-            # Обработка загрузки новой фотографии - исправлено имя поля
-            elif 'new_photo' in request.FILES:
-                photo_file = request.FILES['new_photo']
+            # Обработка загрузки новой фотографии
+            if 'photo' in request.FILES:
+                photo_file = request.FILES['photo']
+
                 # Проверяем размер файла (максимум 5MB)
                 if photo_file.size > 5 * 1024 * 1024:
                     messages.error(request, 'Размер файла не должен превышать 5MB.', extra_tags='profile')
@@ -145,12 +176,17 @@ def profile_edit_view(request):
                 if user.photo:
                     user.photo.delete(save=False)
 
+                # Сохраняем новое фото
                 user.photo = photo_file
 
             user.save()
             messages.success(request, 'Профиль успешно обновлен!')
 
         except Exception as e:
-            messages.error(request, f'Произошла ошибка при обновлении профиля: {str(e)}', extra_tags='profile')
+            messages.error(
+                request,
+                f'Произошла ошибка при обновлении профиля: {str(e)}',
+                extra_tags='profile'
+            )
 
     return redirect('users:profile')
