@@ -1,110 +1,147 @@
-# Bookings/views.py
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import datetime, date, time
 from tables.models import Table
 from .models import Booking
-from users.models import CustomUser # Импортируем кастомного пользователя
-import json
-from datetime import datetime, date, time
+
 
 def booking_view(request):
-    """Отображает страницу бронирования."""
-    # Получаем все столики
+    """Отображает страницу бронирования с выбором даты и столиков."""
+    selected_date = request.GET.get('date')
+
+    # Если дата не указана, используем сегодняшнюю
+    if selected_date:
+        try:
+            selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = date.today()
+    else:
+        selected_date = date.today()
+
+    # Получаем все активные столики
     tables = Table.objects.filter(is_active=True).order_by('number')
 
-    # Получаем бронирования на сегодня (или на нужную дату, можно сделать фильтр)
-    # Для упрощения, пока возьмем все активные бронирования на сегодня
-    # Или все бронирования с подтвержденным статусом
-    # Выберем все подтвержденные и ожидающие бронирования
-    # Важно: чтобы проверять занятость на *конкретную дату*, нужно передавать дату из формы или использовать сегодняшнюю
-    # Пока используем сегодняшнюю дату
-    today = date.today()
-    active_bookings = Booking.objects.filter(
-        status__in=['confirmed', 'pending'],
-        booking_date=today
+    # Получаем бронирования на выбранную дату
+    bookings_on_date = Booking.objects.filter(
+        booking_date=selected_date,
+        status__in=['confirmed', 'pending']
     ).select_related('table')
 
-    # Создаем словарь, где ключ - id столика, значение - True (занят) или False (свободен)
-    booked_table_ids = {booking.table_id for booking in active_bookings}
+    # Создаем словарь занятых временных слотов для каждого столика
+    booked_slots = {}
+    for booking in bookings_on_date:
+        if booking.table_id not in booked_slots:
+            booked_slots[booking.table_id] = []
+        booked_slots[booking.table_id].append(booking.time_slot)
 
-    # Добавляем атрибут is_booked к каждому объекту Table
-    tables_with_status = []
+    # Подготавливаем данные для шаблона
+    tables_data = []
     for table in tables:
-        table.is_booked = table.id in booked_table_ids
-        tables_with_status.append(table)
+        available_slots = []
+        for slot_value, slot_display in Booking.TIME_SLOTS:
+            is_available = (table.id not in booked_slots or
+                            slot_value not in booked_slots[table.id])
 
-    # Передаем данные в шаблон
+            # Проверяем, не прошел ли уже этот слот (для сегодняшней даты)
+            if selected_date == date.today():
+                is_available = is_available and slot_value > datetime.now().time()
+
+            available_slots.append({
+                'value': slot_value.strftime('%H:%M'),
+                'display': slot_display,
+                'is_available': is_available
+            })
+
+        tables_data.append({
+            'table': table,
+            'available_slots': available_slots
+        })
+
     context = {
-        'tables': tables_with_status, # Передаем список столиков с атрибутом is_booked
+        'tables_data': tables_data,
+        'selected_date': selected_date,
+        'min_date': date.today(),
+        'max_date': date.today().replace(year=date.today().year + 1),
     }
     return render(request, 'Bookings/bookings.html', context)
 
+
 @login_required
-@csrf_exempt
 def create_booking_view(request):
-    """Обрабатывает создание бронирования через AJAX."""
+    """Обрабатывает создание бронирования через обычную форму."""
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            table_id = data.get('table_id')
-            booking_date_str = data.get('booking_date')
-            booking_time_str = data.get('booking_time')
-            guests_count = data.get('guests_count')
-            special_requests = data.get('special_requests', '')
+            table_id = request.POST.get('table_id')
+            booking_date_str = request.POST.get('booking_date')
+            time_slot_str = request.POST.get('time_slot')
+            guests_count = request.POST.get('guests_count')
+            special_requests = request.POST.get('special_requests', '')
 
             # Валидация данных
-            if not all([table_id, booking_date_str, booking_time_str, guests_count]):
-                return JsonResponse({'success': False, 'error': 'Все поля обязательны для заполнения.'})
+            if not all([table_id, booking_date_str, time_slot_str, guests_count]):
+                messages.error(request, 'Все поля обязательны для заполнения.')
+                return redirect('bookings:booking_view')
 
-            # Преобразование строк в объекты даты и времени
+            # Преобразование данных
             booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
-            booking_time = datetime.strptime(booking_time_str, '%H:%M').time()
+            time_slot = datetime.strptime(time_slot_str, '%H:%M').time()
             guests_count = int(guests_count)
 
-            # Проверка, что дата не в прошлом
+            # Проверка даты
             if booking_date < date.today():
-                 return JsonResponse({'success': False, 'error': 'Нельзя забронировать столик на прошедшую дату.'})
-            if booking_date == date.today() and booking_time < datetime.now().time():
-                 return JsonResponse({'success': False, 'error': 'Нельзя забронировать столик на прошедшее время.'})
+                messages.error(request, 'Нельзя забронировать столик на прошедшую дату.')
+                return redirect('bookings:booking_view')
 
-            # Проверка, что столик существует и активен
-            table = Table.objects.get(pk=table_id, is_active=True)
+            if booking_date == date.today() and time_slot <= datetime.now().time():
+                messages.error(request, 'Нельзя забронировать столик на прошедшее время.')
+                return redirect('bookings:booking_view')
 
-            # Проверка, что столик не занят на это время
+            # Проверка столика
+            table = get_object_or_404(Table, pk=table_id, is_active=True)
+
+            # Проверка вместимости
+            if guests_count > table.max_guests:
+                messages.error(request,
+                               f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).')
+                return redirect('bookings:booking_view')
+
+            # Проверка доступности временного слота
             existing_booking = Booking.objects.filter(
                 table=table,
                 booking_date=booking_date,
-                booking_time=booking_time,
-                status__in=['confirmed', 'pending'] # Учитываем подтвержденные и ожидающие
-            ).first()
+                time_slot=time_slot,
+                status__in=['confirmed', 'pending']
+            ).exists()
 
             if existing_booking:
-                return JsonResponse({'success': False, 'error': 'Столик уже занят на это время.'})
-
-            # Проверка, что количество гостей не превышает вместимость столика
-            if guests_count > table.max_guests:
-                 return JsonResponse({'success': False, 'error': f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).'})
+                messages.error(request, 'Этот столик уже забронирован на выбранное время.')
+                return redirect('bookings:booking_view')
 
             # Создание бронирования
             booking = Booking.objects.create(
                 user=request.user,
                 table=table,
                 booking_date=booking_date,
-                booking_time=booking_time,
+                time_slot=time_slot,
                 guests_count=guests_count,
-                special_requests=special_requests
+                special_requests=special_requests,
+                status='pending'  # или 'confirmed' в зависимости от вашей логики
             )
 
-            return JsonResponse({'success': True, 'message': 'Бронирование успешно создано!'})
+            messages.success(request, f'Бронирование столика {table.number} на {booking_date} успешно создано!')
+            return redirect('bookings:booking_view')
 
         except Table.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Столик не найден или неактивен.'})
+            messages.error(request, 'Столик не найден или неактивен.')
+            return redirect('bookings:booking_view')
         except ValueError as e:
-            return JsonResponse({'success': False, 'error': f'Неверный формат данных: {str(e)}'})
+            messages.error(request, f'Неверный формат данных: {str(e)}')
+            return redirect('bookings:booking_view')
         except Exception as e:
-            print(f"Ошибка при создании бронирования: {e}") # Логирование ошибки
-            return JsonResponse({'success': False, 'error': 'Произошла ошибка при создании бронирования.'})
+            messages.error(request, 'Произошла ошибка при создании бронирования.')
+            return redirect('bookings:booking_view')
 
-    return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса.'})
+    # Если метод не POST, перенаправляем на страницу бронирования
+    return redirect('bookings:booking_view')
