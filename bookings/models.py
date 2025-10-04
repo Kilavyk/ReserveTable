@@ -1,91 +1,64 @@
+# Bookings/models.py
 from django.db import models
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from users.models import CustomUser
-from tables.models import Table
-
+from django.conf import settings # Используем настройки проекта для User
+from tables.models import Table # Импортируем модель Table из приложения tables
+from datetime import datetime # Для валидации даты
 
 class Booking(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Ожидает подтверждения'),
         ('confirmed', 'Подтверждено'),
+        ('pending', 'В ожидании'),
         ('cancelled', 'Отменено'),
-        ('completed', 'Завершено'),
     ]
 
     user = models.ForeignKey(
-        CustomUser,
+        settings.AUTH_USER_MODEL, # Ссылка на кастомную модель пользователя
         on_delete=models.CASCADE,
         related_name='bookings',
-        help_text="Пользователь, сделавший бронь"
+        help_text="Пользователь, сделавший бронирование"
     )
-
     table = models.ForeignKey(
         Table,
         on_delete=models.CASCADE,
         related_name='bookings',
-        help_text="Столик для бронирования"
+        help_text="Забронированный столик"
     )
-
-    date = models.DateField(
-        help_text="Дата посещения"
+    booking_date = models.DateField(
+        help_text="Дата бронирования"
     )
-
-    time = models.TimeField(
-        help_text="Время посещения"
+    booking_time = models.TimeField(
+        help_text="Время бронирования"
     )
-
-    number_of_guests = models.PositiveSmallIntegerField(
+    guests_count = models.PositiveSmallIntegerField(
         help_text="Количество гостей"
     )
-
-    comment = models.TextField(
-        blank=True,
-        null=True,
-        help_text="Комментарии к брони"
-    )
-
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='pending',
         help_text="Статус бронирования"
     )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        help_text="Дата создания брони"
+    special_requests = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Особые пожелания"
     )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        help_text="Дата последнего обновления"
-    )
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-
-        # Проверка: нельзя бронировать на прошедшую дату/время
-        current_datetime = timezone.now()
-        booking_datetime = timezone.make_aware(
-            timezone.datetime.combine(self.date, self.time)
-        )
-
-        if booking_datetime < current_datetime:
-            raise ValidationError('Нельзя бронировать на прошедшую дату/время.')
-
-        # Проверка: количество гостей не должно превышать max_guests выбранного столика
-        if self.number_of_guests > self.table.max_guests:
-            raise ValidationError(
-                f'Количество гостей ({self.number_of_guests}) превышает '
-                f'максимальную вместимость столика ({self.table.max_guests}).'
-            )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Бронь {self.table.number} на {self.date} в {self.time} для {self.user.phone_number}"
+        return f"Бронь {self.id} - {self.table.number} на {self.booking_date} в {self.booking_time}"
 
     class Meta:
         verbose_name = 'Бронирование'
         verbose_name_plural = 'Бронирования'
-        unique_together = ('table', 'date', 'time')
-        ordering = ['date', 'time']
+        ordering = ['-created_at']
+        unique_together = ('table', 'booking_date', 'booking_time') # Один столик не может быть забронирован дважды на одно и то же время
+
+    def is_past(self):
+        """Проверяет, прошло ли бронирование."""
+        if self.booking_date < datetime.now().date():
+            return True
+        elif self.booking_date == datetime.now().date() and self.booking_time < datetime.now().time():
+            return True
+        return False
