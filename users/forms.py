@@ -18,6 +18,15 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
         widget=forms.EmailInput(attrs={"autocomplete": "username"}),
         help_text="Обязательное поле. Введите ваш email."
     )
+
+    phone_number = forms.CharField(
+        max_length=20,
+        required=False,
+        label="Номер телефона",
+        widget=forms.TextInput(attrs={"placeholder": "+7 (XXX) XXX-XX-XX"}),
+        help_text="Необязательное поле. Для связи с вами."
+    )
+
     password1 = forms.CharField(
         label="Пароль",
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
@@ -31,7 +40,7 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
 
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'password1', 'password2')
+        fields = ('email', 'first_name', 'last_name', 'phone_number', 'password1', 'password2')
 
     def clean_email(self):
         email = self.cleaned_data.get('email').lower()
@@ -61,8 +70,7 @@ class CustomAuthenticationForm(BaseFormStyle, AuthenticationForm):
 class UserProfileForm(BaseFormStyle, forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'photo')
-
+        fields = ('first_name', 'last_name', 'phone_number', 'photo')
 
     def clean_photo(self):
         photo = self.cleaned_data.get('photo')

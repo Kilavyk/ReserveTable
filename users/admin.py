@@ -8,13 +8,13 @@ from .models import CustomUser
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name')
+        fields = ('email', 'first_name', 'last_name', 'phone_number')
 
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'photo', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+        fields = ('email', 'first_name', 'last_name', 'phone_number', 'photo', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
 
 
 class CustomUserAdmin(UserAdmin):
@@ -22,13 +22,13 @@ class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm
     model = CustomUser
 
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined', 'email_verified')
+    list_display = ('email', 'first_name', 'last_name', 'phone_number', 'is_staff', 'is_active', 'date_joined', 'email_verified')
     list_filter = ('is_staff', 'is_active', 'date_joined')
     list_editable = ('is_active', 'is_staff')
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Персональная информация', {'fields': ('first_name', 'last_name', 'photo')}),
+        ('Персональная информация', {'fields': ('first_name', 'last_name', 'phone_number', 'photo')}),
         ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Важные даты', {'fields': ('last_login', 'date_joined')}),
         ('Верификация', {'fields': ('verification_token',)}),
@@ -37,11 +37,11 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'first_name', 'last_name'),
+            'fields': ('email', 'password1', 'password2', 'first_name', 'last_name', 'phone_number'),
         }),
     )
 
-    search_fields = ('email', 'first_name', 'last_name')
+    search_fields = ('email', 'first_name', 'last_name', 'phone_number')
     ordering = ('email',)
     filter_horizontal = ('groups', 'user_permissions')
     readonly_fields = ('date_joined', 'last_login', 'verification_token')

@@ -35,6 +35,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30, blank=True, verbose_name="Имя")
     last_name = models.CharField(max_length=30, blank=True, verbose_name="Фамилия")
 
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Номер телефона",
+        help_text="Номер телефона для связи"
+    )
+
     photo = models.ImageField(
         upload_to='users/photos/',
         blank=True,
