@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-
+import secrets
 
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
 from .models import CustomUser
@@ -32,7 +32,17 @@ def custom_login_view(request):
                         return redirect(next_url)
                     return redirect('core:index')
                 else:
-                    messages.error(request, 'Ваш аккаунт не активирован. Проверьте вашу почту для подтверждения email.')
+                    if user.verification_token:
+                        messages.error(
+                            request,
+                            'Ваш аккаунт временно заблокирован. Завершите восстановление пароля по ссылке из письма.',
+                            extra_tags='password_reset error'
+                        )
+                    else:
+                        messages.error(
+                            request,
+                            'Ваш аккаунт не активирован. Проверьте вашу почту для подтверждения email.'
+                        )
             else:
                 messages.error(request, 'Неверный email или пароль.')
         else:
@@ -177,3 +187,129 @@ def profile_edit_view(request):
             )
 
     return redirect('users:profile')
+
+
+def password_reset_request(request):
+    """Обработка запроса на восстановление пароля"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').lower().strip()
+        next_url = request.POST.get('next', '')
+
+        try:
+            user = CustomUser.objects.get(email=email)
+
+            # Генерируем токен для сброса пароля и делаем аккаунт неактивным
+            reset_token = secrets.token_hex(32)
+            user.verification_token = reset_token
+            user.is_active = False  # Делаем аккаунт неактивным до сброса пароля
+            user.save()
+
+            # Отправка email для сброса пароля
+            try:
+                send_mail(
+                    subject="Восстановление пароля",
+                    message="",
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[user.email],
+                    html_message=render_to_string(
+                        "users/password_reset_email.html",
+                        {
+                            "user": user,
+                            "domain": getattr(settings, 'DOMAIN', request.get_host()),
+                            "token": reset_token,
+                        },
+                    ),
+                )
+                messages.success(
+                    request,
+                    "Инструкции по восстановлению пароля отправлены на ваш email.",
+                    extra_tags="password_reset success"
+                )
+            except Exception as e:
+                # Если не удалось отправить email, возвращаем аккаунт в активное состояние
+                user.is_active = True
+                user.verification_token = None
+                user.save()
+                messages.error(
+                    request,
+                    "Не удалось отправить письмо с инструкциями. Попробуйте позже или свяжитесь с администрацией.",
+                    extra_tags="password_reset error"
+                )
+                print(f"Ошибка отправки email: {e}")
+
+        except CustomUser.DoesNotExist:
+            # Не сообщаем, что пользователь не найден (в целях безопасности)
+            messages.success(
+                request,
+                "Если email зарегистрирован в системе, инструкции по восстановлению пароля будут отправлены на указанный адрес.",
+                extra_tags="password_reset success"
+            )
+
+        if next_url:
+            return redirect(next_url)
+        return redirect('core:index')
+
+    return redirect('core:index')
+
+
+def password_reset_confirm(request, token):
+    """Подтверждение сброса пароля и установка нового пароля"""
+    try:
+        user = CustomUser.objects.get(verification_token=token)
+    except CustomUser.DoesNotExist:
+        messages.error(
+            request,
+            "Недействительная или устаревшая ссылка для восстановления пароля.",
+            extra_tags="password_reset error"
+        )
+        return redirect('core:index')
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if new_password and confirm_password:
+            if new_password == confirm_password:
+                if len(new_password) >= 8:  # Минимальная длина пароля
+                    # Устанавливаем новый пароль и активируем аккаунт
+                    user.set_password(new_password)
+                    user.verification_token = None  # Очищаем токен после использования
+                    user.is_active = True  # Активируем аккаунт
+                    user.save()
+
+                    # Автоматически авторизуем пользователя с новым паролем
+                    user = authenticate(request, email=user.email, password=new_password)
+                    if user is not None:
+                        login(request, user)
+
+                    messages.success(
+                        request,
+                        "Пароль успешно изменен!",
+                        extra_tags="password_reset success"
+                    )
+                    # Перенаправляем на страницу бронирования
+                    return redirect('bookings:booking_view')
+                else:
+                    messages.error(
+                        request,
+                        "Пароль должен содержать минимум 8 символов.",
+                        extra_tags="password_reset error"
+                    )
+            else:
+                messages.error(
+                    request,
+                    "Пароли не совпадают.",
+                    extra_tags="password_reset error"
+                )
+        else:
+            messages.error(
+                request,
+                "Все поля обязательны для заполнения.",
+                extra_tags="password_reset error"
+            )
+
+    # Отображаем страницу с формой сброса пароля
+    return render(request, 'users/password_reset_confirm.html', {
+        'token': token,
+        'user': user
+    })

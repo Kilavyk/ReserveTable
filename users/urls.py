@@ -12,4 +12,6 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('profile/edit/', views.profile_edit_view, name='profile_edit'),
     path('verify/<str:token>/', views.email_verification, name='email_verification'),
+    path('password-reset/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset-confirm/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

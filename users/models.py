@@ -46,7 +46,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
-    # Поля для верификации email
     verification_token = models.CharField(
         max_length=100,
         blank=True,
@@ -73,6 +72,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def generate_verification_token(self):
         """Генерирует токен для верификации email"""
         self.verification_token = secrets.token_hex(16)
+        self.save()
+        return self.verification_token
+
+    def generate_password_reset_token(self):
+        """Генерирует токен для восстановления пароля"""
+        self.verification_token = secrets.token_hex(32)
         self.save()
         return self.verification_token
 
