@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from datetime import datetime, date, time, timedelta
 from tables.models import Table
 from .models import Booking
@@ -134,8 +137,6 @@ def create_booking_view(request):
             guests_count = request.POST.get('guests_count')
             special_requests = request.POST.get('special_requests', '')
 
-
-
             # Преобразование данных
             booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
             time_slot = datetime.strptime(time_slot_str, '%H:%M').time()
@@ -175,17 +176,28 @@ def create_booking_view(request):
                 user=request.user,
                 table=table,
                 booking_date=booking_date,
-                time_slot=time_slot, # Сохраняем переданное время
+                time_slot=time_slot,
                 guests_count=guests_count,
                 special_requests=special_requests,
                 status='pending'
             )
+
+            # Отправка email с подтверждением
+            email_sent = send_booking_confirmation_email(booking)
+
             # Используем get_time_slot_display для получения полного отображения времени
             time_display = booking.get_time_slot_display()
             # Форматируем дату
             formatted_date = booking_date.strftime('%d.%m.%y')
+
             # Формируем сообщение в нужном формате
             messages.success(request, f'Бронь столика №{table.number} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
+
+            if email_sent:
+                messages.info(request, 'Письмо с деталями бронирования отправлено на вашу почту.')
+            else:
+                messages.warning(request, 'Бронирование создано, но не удалось отправить письмо с подтверждением.')
+
             return redirect('bookings:booking_view')
 
         except Table.DoesNotExist:
@@ -199,3 +211,49 @@ def create_booking_view(request):
             return redirect('bookings:booking_view')
 
     return redirect('bookings:booking_view')
+
+
+def send_booking_confirmation_email(booking):
+    """Отправляет email с подтверждением бронирования"""
+
+    # Форматируем дату
+    formatted_date = booking.booking_date.strftime('%d.%m.%Y')
+
+    # Получаем отображаемое время
+    time_display = booking.get_time_slot_display()
+
+    # Безопасно получаем данные пользователя
+    user = booking.user
+    user_first_name = getattr(user, 'first_name', '')
+    user_email = getattr(user, 'email', '')
+
+    context = {
+        'user_first_name': user_first_name,
+        'user_email': user_email,
+        'table_number': booking.table.number,
+        'formatted_date': formatted_date,
+        'time_display': time_display,
+        'guests_count': booking.guests_count,
+        'special_requests': booking.special_requests or '',
+    }
+
+    # Создаем HTML-сообщение
+    html_message = render_to_string('Bookings/booking_confirmation_email.html', context)
+    plain_message = strip_tags(html_message)
+
+    subject = f'Бронирование столика №{booking.table.number} - Gourmet Haven'
+
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=None,  # Использует DEFAULT_FROM_EMAIL из settings
+            recipient_list=[user_email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        # Логируем ошибку, но не прерываем выполнение
+        print(f"Ошибка отправки email: {str(e)}")
+        return False
