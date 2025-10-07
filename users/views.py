@@ -114,6 +114,9 @@ def email_verification(request, token):
     user.verification_token = None  # Очищаем токен после использования
     user.save()
 
+    # Автоматически авторизуем пользователя
+    login(request, user)
+
     messages.success(
         request,
         "Ваш email успешно подтверждён! Теперь вы можете войти в систему."
