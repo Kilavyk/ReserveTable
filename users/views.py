@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -131,12 +132,25 @@ def profile_view(request):
     """Отображает страницу личного кабинета пользователя."""
 
     # Получаем все бронирования пользователя, отсортированные по дате создания (новые сверху)
-    bookings = Booking.objects.filter(user=request.user).select_related('table').order_by('-created_at')
+    bookings_list = Booking.objects.filter(user=request.user).select_related('table').order_by('-created_at')
+
+    # Пагинация - 5 бронирований на страницу
+    paginator = Paginator(bookings_list, 5)
+    page_number = request.GET.get('page')
+
+    try:
+        bookings = paginator.page(page_number)
+    except PageNotAnInteger:
+        # Если page не integer, показываем первую страницу
+        bookings = paginator.page(1)
+    except EmptyPage:
+        # Если page вне диапазона, показываем последнюю страницу
+        bookings = paginator.page(paginator.num_pages)
 
     # Статистика для сайдбара
-    bookings_count = bookings.count()
-    active_bookings_count = bookings.filter(status='confirmed').count()
-    pending_bookings_count = bookings.filter(status='pending').count()
+    bookings_count = bookings_list.count()
+    active_bookings_count = bookings_list.filter(status='confirmed').count()
+    pending_bookings_count = bookings_list.filter(status='pending').count()
 
     context = {
         'bookings': bookings,
