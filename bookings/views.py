@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.conf import settings
 from datetime import datetime, date, time, timedelta
 from tables.models import Table
 from .models import Booking
@@ -183,7 +184,7 @@ def create_booking_view(request):
             )
 
             # Отправка email с подтверждением
-            email_sent = send_booking_confirmation_email(booking)
+            email_results = send_booking_confirmation_email(booking)
 
             # Используем get_time_slot_display для получения полного отображения времени
             time_display = booking.get_time_slot_display()
@@ -193,7 +194,7 @@ def create_booking_view(request):
             # Формируем сообщение в нужном формате
             messages.success(request, f'Бронь столика №{table.number} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
 
-            if email_sent:
+            if email_results['user']:
                 messages.info(request, 'Письмо с деталями бронирования отправлено на вашу почту.')
             else:
                 messages.warning(request, 'Бронирование создано, но не удалось отправить письмо с подтверждением.')
@@ -214,7 +215,7 @@ def create_booking_view(request):
 
 
 def send_booking_confirmation_email(booking):
-    """Отправляет email с подтверждением бронирования"""
+    """Отправляет email с подтверждением бронирования пользователю и уведомление администрации"""
 
     # Форматируем дату
     formatted_date = booking.booking_date.strftime('%d.%m.%Y')
@@ -226,8 +227,10 @@ def send_booking_confirmation_email(booking):
     user = booking.user
     user_first_name = getattr(user, 'first_name', '')
     user_email = getattr(user, 'email', '')
+    user_phone = getattr(user, 'phone_number', 'не указан')
 
-    context = {
+    # Отправка подтверждения пользователю
+    user_context = {
         'user_first_name': user_first_name,
         'user_email': user_email,
         'table_number': booking.table.number,
@@ -237,23 +240,66 @@ def send_booking_confirmation_email(booking):
         'special_requests': booking.special_requests or '',
     }
 
-    # Создаем HTML-сообщение
-    html_message = render_to_string('Bookings/booking_confirmation_email.html', context)
-    plain_message = strip_tags(html_message)
+    # Создаем HTML-сообщение для пользователя
+    user_html_message = render_to_string('Bookings/booking_confirmation_email.html', user_context)
+    user_plain_message = strip_tags(user_html_message)
 
-    subject = f'Бронирование столика №{booking.table.number} - Gourmet Haven'
+    user_subject = f'Бронирование столика №{booking.table.number} - Gourmet Haven'
+
+    # Отправка уведомления администрации
+    admin_context = {
+        'booking_id': booking.id,
+        'user_first_name': user_first_name,
+        'user_last_name': getattr(user, 'last_name', 'не указано'),
+        'user_email': user_email,
+        'user_phone': user_phone,
+        'table_number': booking.table.number,
+        'table_description': booking.table.description if hasattr(booking.table, 'description') else 'не указано',
+        'formatted_date': formatted_date,
+        'time_display': time_display,
+        'guests_count': booking.guests_count,
+        'special_requests': booking.special_requests or 'не указаны',
+        'booking_status': booking.get_status_display(),
+        'created_at': booking.created_at.strftime('%d.%m.%Y %H:%M'),
+    }
+
+    admin_html_message = render_to_string('Bookings/booking_notification_admin.html', admin_context)
+    admin_plain_message = strip_tags(admin_html_message)
+
+    admin_subject = f'Новое бронирование столика №{booking.table.number} - Gourmet Haven'
+
+    email_results = {
+        'user': False,
+        'admin': False
+    }
 
     try:
+        # Отправка пользователю
         send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=None,  # Использует DEFAULT_FROM_EMAIL из settings
+            subject=user_subject,
+            message=user_plain_message,
+            from_email=None,
             recipient_list=[user_email],
-            html_message=html_message,
+            html_message=user_html_message,
             fail_silently=False,
         )
-        return True
+        email_results['user'] = True
     except Exception as e:
-        # Логируем ошибку, но не прерываем выполнение
-        print(f"Ошибка отправки email: {str(e)}")
-        return False
+        print(f"Ошибка отправки email пользователю: {str(e)}")
+
+    try:
+        # Отправка администрации
+        admin_email = settings.EMAIL_HOST_USER  # Берем email администрации из настроек
+        send_mail(
+            subject=admin_subject,
+            message=admin_plain_message,
+            from_email=None,
+            recipient_list=[admin_email],
+            html_message=admin_html_message,
+            fail_silently=False,
+        )
+        email_results['admin'] = True
+    except Exception as e:
+        print(f"Ошибка отправки email администрации: {str(e)}")
+
+    return email_results
