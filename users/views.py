@@ -160,6 +160,7 @@ def profile_view(request):
         'bookings_count': bookings_count,
         'active_bookings_count': active_bookings_count,
         'pending_bookings_count': pending_bookings_count,
+        'time_slots': Booking.TIME_SLOTS,
     }
 
     return render(request, 'users/profile.html', context)
