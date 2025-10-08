@@ -63,7 +63,13 @@ class Booking(models.Model):
         verbose_name = 'Бронирование'
         verbose_name_plural = 'Бронирования'
         ordering = ['-created_at']
-        unique_together = ('table', 'booking_date', 'time_slot')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['table', 'booking_date', 'time_slot'],
+                condition=models.Q(status__in=['confirmed', 'pending']),
+                name='unique_active_booking_per_table_timeslot'
+            )
+        ]
 
     def get_time_slot_display(self):
         """Возвращает отображаемое значение временного слота"""
