@@ -128,3 +128,9 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DOMAIN = "localhost:8000"
+
+CSRF_TRUSTED_ORIGINS = [
+'http://89.169.188.214',
+'http://89.169.188.214:8000',
+'http://localhost:8000', # Для локальной разработки
+]
