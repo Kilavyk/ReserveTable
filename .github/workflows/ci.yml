@@ -55,7 +55,7 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd reserve_table
 
-          git pull
+          git pull origin feature
           sudo docker compose down || true
           sudo docker compose up -d --build
 
