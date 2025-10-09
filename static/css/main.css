@@ -1,0 +1,116 @@
+/* static/css/main.css */
+
+body {
+  background-image: url('../img/background.png');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  color: white;
+}
+
+.text-outline {
+  text-shadow:
+    -1px -1px 0 rgba(0,0,0,0.8),
+     1px -1px 0 rgba(0,0,0,0.8),
+    -1px  1px 0 rgba(0,0,0,0.8),
+     1px  1px 0 rgba(0,0,0,0.8);
+}
+
+.content-box {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  padding: 2rem;
+  color: white;
+}
+
+.navbar-transparent {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-link {
+  color: white !important;
+  position: relative;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: #d4a017;
+  transition: width 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover {
+  color: #d4a017 !important;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.menu-category {
+  margin-bottom: 3rem;
+}
+
+.menu-item {
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding: 1rem 0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.price-tag {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.category-icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+}
+
+.dish-badge {
+  background: linear-gradient(45deg, #8B4513, #D2691E);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.3rem 0.6rem;
+  margin-left: 0.5rem;
+}
+
+.password-reset-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/img/background.png');
+    background-size: cover;
+    background-position: center;
+}
+
+.btn-brown {
+    background-color: #8B4513;
+    border-color: #8B4513;
+    color: white;
+}
+
+.btn-brown:hover {
+    background-color: #654321;
+    border-color: #654321;
+    color: white;
+}
+
+.bg-brown {
+    background-color: #8B4513 !important;
+}

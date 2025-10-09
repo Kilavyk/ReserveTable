@@ -1,0 +1,16 @@
+<!-- templates/includes/admin_navbar.html -->
+<nav class="navbar navbar-expand-lg mb-4">
+    <div class="container-fluid justify-content-center">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Админ-навигация">
+            <a class="btn btn-outline-primary" href="{% url 'bookings:admin_panel' %}">
+                Бронирования
+            </a>
+            <a class="btn btn-outline-primary" href="{% url 'tables:management' %}">
+                Столики
+            </a>
+            <a class="btn btn-outline-primary" href="#">
+                Пользователи
+            </a>
+        </div>
+    </div>
+</nav>

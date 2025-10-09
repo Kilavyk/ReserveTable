@@ -1,0 +1,100 @@
+<nav class="navbar navbar-expand-lg navbar-transparent">
+  <div class="container position-relative">
+    <!-- Левая часть -->
+    <ul class="navbar-nav me-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'core:index' %}">Главная</a>
+      </li>
+
+      <!-- Администрирование -->
+      {% if user.is_authenticated and perms.bookings.view_booking %}
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'bookings:admin_panel' %}">Администрирование</a>
+      </li>
+      {% endif %}
+    </ul>
+
+    <!-- Правая часть -->
+    <ul class="navbar-nav ms-auto">
+  {% if user.is_authenticated %}
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'users:profile' %}">
+        {% if user.first_name or user.last_name %}
+          {{ user.first_name|default:"" }} {{ user.last_name|default:"" }}
+        {% else %}
+          {{ user.email }}
+        {% endif %}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'users:logout' %}">Выйти</a>
+    </li>
+  {% else %}
+    <li class="nav-item">
+      <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#authModal">Войти</a>
+    </li>
+  {% endif %}
+</ul>
+
+    <!-- Центральные ссылки (визуально по центру) -->
+    <ul class="navbar-nav position-absolute start-50 translate-middle-x">
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'core:about' %}">История</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'core:menu' %}">Меню</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'core:contacts' %}">Контакты</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'bookings:booking_view' %}">Забронировать столик</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Подключаем модальные окна авторизации -->
+{% include 'includes/modals/auth_modals.html' %}
+
+<script>
+  function switchToRegister() {
+    const loginModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
+    if (loginModal) {
+      loginModal.hide();
+    }
+    const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+    registerModal.show();
+  }
+
+  function switchToLogin() {
+    const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+    if (registerModal) {
+      registerModal.hide();
+    }
+    const loginModal = new bootstrap.Modal(document.getElementById('authModal'));
+    loginModal.show();
+  }
+
+  // Автоматическое открытие модальных окон при ошибках
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if messages %}
+      {% for message in messages %}
+        {% if 'error' in message.tags %}
+          // Проверяем, была ли попытка регистрации (по наличию поля password2 в запросе)
+          const hasRegistrationError = {% if request.POST.password2 %}true{% else %}false{% endif %};
+
+          if (hasRegistrationError) {
+            // Открываем модальное окно регистрации при ошибках регистрации
+            const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+            registerModal.show();
+          } else {
+            // Открываем модальное окно авторизации при ошибках входа
+            const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+            authModal.show();
+          }
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  });
+</script>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; }
+        .content { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .booking-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .field { margin-bottom: 10px; }
+        .field strong { display: inline-block; width: 180px; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Новое бронирование столика</h2>
+        </div>
+
+        <div class="content">
+            <div class="booking-info">
+                <h3>Детали бронирования:</h3>
+                <div class="field"><strong>ID бронирования:</strong> {{ booking_id }}</div>
+                <div class="field"><strong>Статус:</strong> {{ booking_status }}</div>
+                <div class="field"><strong>Дата создания:</strong> {{ created_at }}</div>
+
+                <h3>Информация о столике:</h3>
+                <div class="field"><strong>Номер столика:</strong> {{ table_number }}</div>
+                <div class="field"><strong>Описание столика:</strong> {{ table_description }}</div>
+                <div class="field"><strong>Дата бронирования:</strong> {{ formatted_date }}</div>
+                <div class="field"><strong>Время:</strong> {{ time_display }}</div>
+                <div class="field"><strong>Количество гостей:</strong> {{ guests_count }}</div>
+
+                <h3>Информация о клиенте:</h3>
+                <div class="field"><strong>Имя:</strong> {{ user_first_name }} {{ user_last_name }}</div>
+                <div class="field"><strong>Email:</strong> {{ user_email }}</div>
+                <div class="field"><strong>Телефон:</strong> {{ user_phone }}</div>
+
+                <h3>Особые пожелания:</h3>
+                <div class="field">{{ special_requests }}</div>
+            </div>
+
+            <p>Бронирование ожидает подтверждения в административной панели.</p>
+        </div>
+
+        <div class="footer">
+            <p>Это письмо было отправлено автоматически. Пожалуйста, не отвечайте на него.</p>
+            <p>&copy; 2024 Gourmet Haven. Все права защищены.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!-- templates/core/about.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>О ресторане — Gourmet Haven</title>
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  {% include 'includes/header.html' %}
+
+  <main class="container my-5">
+    <div class="content-box">
+      <!-- История ресторана -->
+      <section class="mb-5">
+        <h1 class="display-4 text-center mb-4 text-outline">О ресторане</h1>
+        <h2 class="text-center mb-4">История ресторана</h2>
+        <p class="lead text-center">
+          Gourmet Haven был основан в 2010 году с мечтой создать место, где кулинарное искусство встречается с гостеприимством.
+          Начав с небольшого кафе, мы выросли в один из самых уважаемых ресторанов города, сохраняя при этом нашу страсть к деталям.
+        </p>
+      </section>
+
+      <!-- Миссия и ценности -->
+      <section class="mb-5">
+        <h2 class="text-center mb-4">Миссия и ценности</h2>
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <p class="text-center">
+              Наша миссия — создавать незабываемые гастрономические впечатления, используя только лучшие ингредиенты и инновационные подходы.
+            </p>
+            <ul class="list-unstyled text-center">
+              <li class="mb-2"><strong>Качество:</strong> Мы используем только свежие и качественные продукты.</li>
+              <li class="mb-2"><strong>Гостеприимство:</strong> Каждый гость — как дома.</li>
+              <li class="mb-2"><strong>Инновации:</strong> Современные технологии в традиционной кухне.</li>
+              <li class="mb-2"><strong>Устойчивость:</strong> Мы заботимся о природе и обществе.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Команда -->
+      <section>
+        <h2 class="text-center mb-4">Наша команда</h2>
+        <div class="row">
+          <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <h5 class="card-title">Шеф-повар Алексей Петров</h5>
+                <p class="card-text">Обладатель множества наград, специалист по международной кухне.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <h5 class="card-title">Менеджер по обслуживанию Мария Соколова</h5>
+                <p class="card-text">Отвечает за безупречный сервис и комфорт наших гостей.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <h5 class="card-title">Сомелье Иван Козлов</h5>
+                <p class="card-text">Эксперт по винам, подберёт идеальное сочетание к вашему блюду.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  {% include 'includes/footer.html' %}
+
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

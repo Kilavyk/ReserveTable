@@ -1,0 +1,236 @@
+<!-- templates/core/contacts.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты — Gourmet Haven</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        .contact-hero {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            margin-bottom: 3rem;
+        }
+        .contact-card {
+            border: none;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .contact-card:hover {
+            transform: translateY(-5px);
+        }
+        .contact-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .hours-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .hours-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+{% include 'includes/header.html' %}
+
+<main class="container my-5">
+    <div class="content-box p-4">
+        <!-- Герой-секция -->
+        <section class="text-center">
+            <h1 class="display-4 mb-3 text-outline">Свяжитесь с нами</h1>
+        </section>
+
+        <!-- Основная контактная информация в сетке -->
+        <section class="mb-5">
+
+            <div class="feature-grid">
+                <div class="card contact-card shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="contact-icon">📍</div>
+                        <h5 class="card-title">Наш адрес</h5>
+                        <p class="card-text">
+                            г. Москва, ул. Вкусная, д. 42<br>
+                            <small class="text-muted">Метро "Аппетитная", 5 минут пешком</small>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card contact-card shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="contact-icon">📞</div>
+                        <h5 class="card-title">Телефон</h5>
+                        <p class="card-text">
+                            +7 (495) 123-45-67<br>
+                            <small class="text-muted">Для заказов и бронирования</small>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card contact-card shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="contact-icon">✉️</div>
+                        <h5 class="card-title">Электронная почта</h5>
+                        <p class="card-text">
+                            hello@gourmethaven.ru<br>
+                            <small class="text-muted">Отвечаем в течение 2 часов</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Часы работы и дополнительные услуги в одной строке -->
+        <section class="mb-5">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card contact-card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h3 class="text-center mb-4">🕒 Часы работы</h3>
+                            <ul class="list-unstyled hours-list">
+                                <li class="d-flex justify-content-between">
+                                    <span>Понедельник - Четверг</span>
+                                    <strong>12:00 - 23:00</strong>
+                                </li>
+                                <li class="d-flex justify-content-between">
+                                    <span>Пятница - Суббота</span>
+                                    <strong>12:00 - 00:00</strong>
+                                </li>
+                                <li class="d-flex justify-content-between">
+                                    <span>Воскресенье</span>
+                                    <strong>12:00 - 22:00</strong>
+                                </li>
+                            </ul>
+                            <div class="text-center mt-4">
+                                <small class="text-muted">Бронируйте столы заранее в выходные дни</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card contact-card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h3 class="text-center mb-4">Услуги и возможности</h3>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div style="font-size: 1.5rem;">🚗</div>
+                                        <small>Бесплатная парковка</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div style="font-size: 1.5rem;">🎉</div>
+                                        <small>Организация банкетов</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div style="font-size: 1.5rem;">💕</div>
+                                        <small>Романтический ужин</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div style="font-size: 1.5rem;">💼</div>
+                                        <small>Корпоративное обслуживание</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-4">
+                                <small class="text-muted">Все вопросы по телефону: +7 (495) 123-45-68</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Карьера и специальные предложения -->
+        <section class="mb-5">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card contact-card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h4 class="text-center mb-3">💼 Присоединяйтесь к команде</h4>
+                            <p class="text-center">Ищем талантливых поваров, официантов и бариста</p>
+                            <div class="text-center">
+                                <strong>career@gourmethaven.ru</strong><br>
+                                <small class="text-muted">Отправляйте резюме с фото любимого блюда</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card contact-card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h4 class="text-center mb-3">📱 Будьте на связи</h4>
+                            <p class="text-center">Подпишитесь на наши соцсети для получения специальных предложений</h4>
+                            <div class="text-center">
+                                <strong>@gourmethaven</strong><br>
+                                <small class="text-muted">Ежедневные акции и новые позиции меню</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Финальное примечание -->
+        <section>
+            <div class="card border-warning shadow-sm">
+                <div class="card-body text-center p-4">
+                    <h5 class="card-title text-warning mb-3">🌟 Что ждет вас у нас?</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2rem;">😊</div>
+                                <small>Уютная атмосфера</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2rem;">🍽️</div>
+                                <small>Авторская кухня</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2rem;">👨‍🍳</div>
+                                <small>Шеф-повар с мишленовским опытом</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2rem;">⭐</div>
+                                <small>Премиальное обслуживание</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <small class="text-muted">Ждем вас в гости за незабываемыми гастрономическими впечатлениями!</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+{% include 'includes/footer.html' %}
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
