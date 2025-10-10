@@ -14,4 +14,9 @@ urlpatterns = [
     path('verify/<str:token>/', views.email_verification, name='email_verification'),
     path('password-reset/', views.password_reset_request, name='password_reset_request'),
     path('password-reset-confirm/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
+
+    path('management/', views.users_management_view, name='users_management'),
+    path('add/', views.add_user_view, name='add_user'),
+    path('edit/', views.edit_user_view, name='edit_user'),
+    path('delete/', views.delete_user_view, name='delete_user'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

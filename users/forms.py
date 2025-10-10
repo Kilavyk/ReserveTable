@@ -85,3 +85,16 @@ class UserProfileForm(BaseFormStyle, forms.ModelForm):
                 raise forms.ValidationError('Допустимы только файлы изображений (JPEG, PNG).')
 
         return photo
+
+
+class CustomUserAdminForm(forms.ModelForm):
+    """Форма для администрирования пользователей"""
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Оставьте пустым, если не нужно менять'}),
+        required=False,
+        label='Пароль'
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'first_name', 'last_name', 'phone_number', 'is_active', 'is_staff']

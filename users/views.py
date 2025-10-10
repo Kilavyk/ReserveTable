@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import IntegrityError
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -332,3 +333,151 @@ def password_reset_confirm(request, token):
         'token': token,
         'user': user
     })
+
+@login_required
+@permission_required('users.view_customuser', raise_exception=True)
+def users_management_view(request):
+    """Страница управления пользователями"""
+    # Получаем всех пользователей, отсортированных по дате регистрации (новые сверху)
+    users_list = CustomUser.objects.all().order_by('-date_joined')
+
+    # Пагинация - 10 пользователей на страницу
+    paginator = Paginator(users_list, 10)
+    page_number = request.GET.get('page')
+    users = paginator.get_page(page_number)
+
+    context = {
+        'users': users,
+    }
+    return render(request, 'users/users_management.html', context)
+
+
+@login_required
+@permission_required('users.add_customuser', raise_exception=True)
+def add_user_view(request):
+    """Добавление нового пользователя"""
+    if request.method == 'POST':
+        try:
+            email = request.POST.get('email', '').strip().lower()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            phone_number = request.POST.get('phone_number', '').strip()
+            password = request.POST.get('password', '')
+            is_active = request.POST.get('is_active') == 'on'
+            is_staff = request.POST.get('is_staff') == 'on'
+
+            # Валидация
+            if not email:
+                messages.error(request, 'Email обязателен для заполнения.')
+                return redirect('users:users_management')
+
+            if not password:
+                messages.error(request, 'Пароль обязателен для заполнения.')
+                return redirect('users:users_management')
+
+            if len(password) < 8:
+                messages.error(request, 'Пароль должен содержать минимум 8 символов.')
+                return redirect('users:users_management')
+
+            # Создаем пользователя
+            user = CustomUser.objects.create_user(
+                email=email,
+                password=password,
+                first_name=first_name if first_name else '',
+                last_name=last_name if last_name else '',
+                phone_number=phone_number if phone_number else '',
+                is_active=is_active,
+                is_staff=is_staff
+            )
+
+            messages.success(request, f'Пользователь {user.email} успешно добавлен!')
+
+        except IntegrityError:
+            messages.error(request, f'Пользователь с email {email} уже существует.')
+        except Exception as e:
+            messages.error(request, f'Произошла ошибка при добавлении пользователя: {str(e)}')
+
+    return redirect('users:users_management')
+
+
+@login_required
+@permission_required('users.change_customuser', raise_exception=True)
+def edit_user_view(request):
+    """Редактирование пользователя"""
+    if request.method == 'POST':
+        try:
+            user_id = request.POST.get('user_id')
+            email = request.POST.get('email', '').strip().lower()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            phone_number = request.POST.get('phone_number', '').strip()
+            password = request.POST.get('password', '')
+            is_active = request.POST.get('is_active') == 'on'
+            is_staff = request.POST.get('is_staff') == 'on'
+
+            # Получаем пользователя
+            user = get_object_or_404(CustomUser, id=user_id)
+
+            # Валидация
+            if not email:
+                messages.error(request, 'Email обязателен для заполнения.')
+                return redirect('users:users_management')
+
+            # Проверяем, не занят ли email другим пользователем
+            if CustomUser.objects.filter(email=email).exclude(id=user_id).exists():
+                messages.error(request, f'Пользователь с email {email} уже существует.')
+                return redirect('users:users_management')
+
+            # Обновляем пользователя
+            user.email = email
+            user.first_name = first_name if first_name else ''
+            user.last_name = last_name if last_name else ''
+            user.phone_number = phone_number if phone_number else ''
+            user.is_active = is_active
+            user.is_staff = is_staff
+
+            # Обновляем пароль, если он указан
+            if password:
+                if len(password) < 8:
+                    messages.error(request, 'Пароль должен содержать минимум 8 символов.')
+                    return redirect('users:users_management')
+                user.set_password(password)
+
+            user.save()
+
+            messages.success(request, f'Пользователь {user.email} успешно обновлен!')
+
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Пользователь не найден.')
+        except Exception as e:
+            messages.error(request, f'Произошла ошибка при обновлении пользователя: {str(e)}')
+
+    return redirect('users:users_management')
+
+
+@login_required
+@permission_required('users.delete_customuser', raise_exception=True)
+def delete_user_view(request):
+    """Удаление пользователя"""
+    if request.method == 'POST':
+        try:
+            user_id = request.POST.get('user_id')
+            user = get_object_or_404(CustomUser, id=user_id)
+            user_email = user.email
+
+            # Нельзя удалить самого себя
+            if user == request.user:
+                messages.error(request, 'Вы не можете удалить свой собственный аккаунт.')
+                return redirect('users:users_management')
+
+            # Удаляем пользователя
+            user.delete()
+
+            messages.success(request, f'Пользователь {user_email} успешно удален!')
+
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Пользователь не найден.')
+        except Exception as e:
+            messages.error(request, f'Произошла ошибка при удалении пользователя: {str(e)}')
+
+    return redirect('users:users_management')
