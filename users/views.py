@@ -341,8 +341,8 @@ def users_management_view(request):
     # Получаем всех пользователей, отсортированных по дате регистрации (новые сверху)
     users_list = CustomUser.objects.all().order_by('-date_joined')
 
-    # Пагинация - 10 пользователей на страницу
-    paginator = Paginator(users_list, 10)
+    # Пагинация - 50 пользователей на страницу
+    paginator = Paginator(users_list, 50)
     page_number = request.GET.get('page')
     users = paginator.get_page(page_number)
 
@@ -364,7 +364,6 @@ def add_user_view(request):
             phone_number = request.POST.get('phone_number', '').strip()
             password = request.POST.get('password', '')
             is_active = request.POST.get('is_active') == 'on'
-            is_staff = request.POST.get('is_staff') == 'on'
 
             # Валидация
             if not email:
@@ -379,6 +378,19 @@ def add_user_view(request):
                 messages.error(request, 'Пароль должен содержать минимум 8 символов.')
                 return redirect('users:users_management')
 
+            # Валидация длины полей
+            if len(first_name) > 30:
+                messages.error(request, 'Имя не может быть длиннее 30 символов.')
+                return redirect('users:users_management')
+
+            if len(last_name) > 30:
+                messages.error(request, 'Фамилия не может быть длиннее 30 символов.')
+                return redirect('users:users_management')
+
+            if len(phone_number) > 20:
+                messages.error(request, 'Телефон не может быть длиннее 20 символов.')
+                return redirect('users:users_management')
+
             # Создаем пользователя
             user = CustomUser.objects.create_user(
                 email=email,
@@ -387,7 +399,7 @@ def add_user_view(request):
                 last_name=last_name if last_name else '',
                 phone_number=phone_number if phone_number else '',
                 is_active=is_active,
-                is_staff=is_staff
+                is_staff=False
             )
 
             messages.success(request, f'Пользователь {user.email} успешно добавлен!')
@@ -413,12 +425,29 @@ def edit_user_view(request):
             phone_number = request.POST.get('phone_number', '').strip()
             password = request.POST.get('password', '')
             is_active = request.POST.get('is_active') == 'on'
-            is_staff = request.POST.get('is_staff') == 'on'
 
             # Получаем пользователя
             user = get_object_or_404(CustomUser, id=user_id)
 
-            # Валидация
+            # Защита от редактирования администраторов
+            if user.is_superuser:
+                messages.error(request, 'Нельзя редактировать администратора через интерфейс.')
+                return redirect('users:users_management')
+
+            # Валидация длины полей
+            if len(first_name) > 30:
+                messages.error(request, 'Имя не может быть длиннее 30 символов.')
+                return redirect('users:users_management')
+
+            if len(last_name) > 30:
+                messages.error(request, 'Фамилия не может быть длиннее 30 символов.')
+                return redirect('users:users_management')
+
+            if len(phone_number) > 20:
+                messages.error(request, 'Телефон не может быть длиннее 20 символов.')
+                return redirect('users:users_management')
+
+            # Валидация email
             if not email:
                 messages.error(request, 'Email обязателен для заполнения.')
                 return redirect('users:users_management')
@@ -434,7 +463,6 @@ def edit_user_view(request):
             user.last_name = last_name if last_name else ''
             user.phone_number = phone_number if phone_number else ''
             user.is_active = is_active
-            user.is_staff = is_staff
 
             # Обновляем пароль, если он указан
             if password:

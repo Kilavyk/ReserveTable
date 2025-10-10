@@ -7,7 +7,7 @@
       </li>
 
       <!-- Администрирование -->
-      {% if user.is_authenticated and perms.bookings.view_booking %}
+      {% if user.is_authenticated and user.groups.exists %}
       <li class="nav-item">
         <a class="nav-link" href="{% url 'bookings:admin_panel' %}">Администрирование</a>
       </li>

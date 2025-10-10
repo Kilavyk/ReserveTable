@@ -14,14 +14,26 @@
     <!-- Включаем навигацию админ-панели -->
     {% include 'includes/admin_navbar.html' %}
 
-    <div class="container" style="max-width: 1200px;">
-        <!-- Заголовок -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">Управление пользователями</h1>
-            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                + Добавить пользователя
-            </button>
+<div class="container" style="max-width: 1200px;">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Управление пользователями</h1>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            + Добавить пользователя
+        </button>
+    </div>
+
+    <!-- Блок для отображения сообщений -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
         <!-- Таблица пользователей -->
         <div class="card">
@@ -51,15 +63,25 @@
                                         <div>
                                             <strong>{{ user.get_full_name|default:"Не указано" }}</strong>
                                             <br>
-                                            <small class="text-muted">{{ user.email }}</small>
-                                            <br>
+
+
+
+
                                             <small class="text-muted">ID: {{ user.id }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <div>
-                                        <strong>Email:</strong> {{ user.email }}<br>
+                                        <strong>Email:</strong>
+{% if not user.is_superuser %}
+                                        {{ user.email }}
+
+{% else %}
+<span class="text-muted">Скрыт</span>
+{% endif %}
+
+                                        <br>
                                         {% if user.phone_number %}
                                             <strong>Телефон:</strong> {{ user.phone_number }}<br>
                                         {% else %}
@@ -74,10 +96,10 @@
                                         </span>
                                     </div>
                                     <div class="mb-1">
-                                        <span class="badge {% if user.is_staff %}bg-primary{% else %}bg-light text-dark{% endif %}">
-                                            {% if user.is_staff %}Персонал{% else %}Клиент{% endif %}
-                                        </span>
-                                    </div>
+    <span class="badge {% if user.is_staff or user.groups.exists %}bg-primary{% else %}bg-light text-dark{% endif %}">
+        {% if user.is_staff or user.groups.exists %}Персонал{% else %}Клиент{% endif %}
+    </span>
+</div>
                                     <div>
                                         <span class="badge {% if user.is_superuser %}bg-warning{% else %}bg-light text-dark{% endif %}">
                                             {% if user.is_superuser %}Администратор{% else %}Обычный{% endif %}
@@ -184,7 +206,8 @@
                 <h5 class="modal-title">Добавить пользователя</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'users:add_user' %}">
+            <form method="post" action="{% url 'users:add_user' %}?action=add">
+
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
@@ -218,7 +241,7 @@
                             Активный
                         </label>
                     </div>
-                    <!-- Убрана галочка "Персонал" при добавлении -->
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -237,7 +260,7 @@
                 <h5 class="modal-title">Редактировать пользователя</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'users:edit_user' %}">
+            <form method="post" action="{% url 'users:edit_user' %}?action=edit">
                 {% csrf_token %}
                 <input type="hidden" id="editUserId" name="user_id">
                 <div class="modal-body">
@@ -269,7 +292,7 @@
                             Активный
                         </label>
                     </div>
-                    <!-- Убрана галочка "Персонал" при редактировании -->
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -306,27 +329,103 @@
 
     <!-- Подключение JavaScript -->
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-// Обработка модального окна редактирования
+<script>
+// Автоматическое открытие модальных окон при ошибках с сохранением данных
 document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, есть ли сообщения об ошибках
+    const errorAlerts = document.querySelectorAll('.alert-danger');
+
+    if (errorAlerts.length > 0) {
+        // Определяем, какое модальное окно нужно открыть
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+
+        setTimeout(() => {
+            if (action === 'add') {
+                const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+                addModal.show();
+
+                // Восстанавливаем данные формы добавления из sessionStorage
+                const savedFormData = sessionStorage.getItem('addUserFormData');
+                if (savedFormData) {
+                    const formData = JSON.parse(savedFormData);
+                    document.getElementById('userEmail').value = formData.email || '';
+                    document.getElementById('userFirstName').value = formData.first_name || '';
+                    document.getElementById('userLastName').value = formData.last_name || '';
+                    document.getElementById('userPhone').value = formData.phone_number || '';
+                    document.getElementById('addIsActive').checked = formData.is_active || true;
+                    sessionStorage.removeItem('addUserFormData');
+                }
+            } else if (action === 'edit') {
+                const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                editModal.show();
+
+                // Восстанавливаем данные формы редактирования из sessionStorage
+                const savedFormData = sessionStorage.getItem('editUserFormData');
+                if (savedFormData) {
+                    const formData = JSON.parse(savedFormData);
+                    document.getElementById('editUserId').value = formData.user_id || '';
+                    document.getElementById('editUserEmail').value = formData.email || '';
+                    document.getElementById('editUserFirstName').value = formData.first_name || '';
+                    document.getElementById('editUserLastName').value = formData.last_name || '';
+                    document.getElementById('editUserPhone').value = formData.phone_number || '';
+                    document.getElementById('editIsActive').checked = formData.is_active || false;
+                    sessionStorage.removeItem('editUserFormData');
+                }
+            }
+        }, 300);
+    }
+
+    // Сохранение данных формы перед отправкой
+    const addForm = document.querySelector('form[action*="add"]');
+    if (addForm) {
+        addForm.addEventListener('submit', function() {
+            const formData = {
+                email: document.getElementById('userEmail').value,
+                first_name: document.getElementById('userFirstName').value,
+                last_name: document.getElementById('userLastName').value,
+                phone_number: document.getElementById('userPhone').value,
+                is_active: document.getElementById('addIsActive').checked
+            };
+            sessionStorage.setItem('addUserFormData', JSON.stringify(formData));
+        });
+    }
+
+    const editForm = document.querySelector('form[action*="edit"]');
+    if (editForm) {
+        editForm.addEventListener('submit', function() {
+            const formData = {
+                user_id: document.getElementById('editUserId').value,
+                email: document.getElementById('editUserEmail').value,
+                first_name: document.getElementById('editUserFirstName').value,
+                last_name: document.getElementById('editUserLastName').value,
+                phone_number: document.getElementById('editUserPhone').value,
+                is_active: document.getElementById('editIsActive').checked
+            };
+            sessionStorage.setItem('editUserFormData', JSON.stringify(formData));
+        });
+    }
+
+    // Обработка модального окна редактирования
     const editModal = document.getElementById('editUserModal');
     if (editModal) {
         editModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
-            const userId = button.getAttribute('data-user-id');
-            const userEmail = button.getAttribute('data-user-email');
-            const userFirstName = button.getAttribute('data-user-first-name');
-            const userLastName = button.getAttribute('data-user-last-name');
-            const userPhone = button.getAttribute('data-user-phone');
-            const userIsActive = button.getAttribute('data-user-is-active') === 'True';
+            if (button) {
+                const userId = button.getAttribute('data-user-id');
+                const userEmail = button.getAttribute('data-user-email');
+                const userFirstName = button.getAttribute('data-user-first-name');
+                const userLastName = button.getAttribute('data-user-last-name');
+                const userPhone = button.getAttribute('data-user-phone');
+                const userIsActive = button.getAttribute('data-user-is-active') === 'True';
 
-            document.getElementById('editUserId').value = userId;
-            document.getElementById('editUserEmail').value = userEmail;
-            document.getElementById('editUserFirstName').value = userFirstName;
-            document.getElementById('editUserLastName').value = userLastName;
-            document.getElementById('editUserPhone').value = userPhone;
-            document.getElementById('editIsActive').checked = userIsActive;
-            // Убрана установка галочки is_staff
+                document.getElementById('editUserId').value = userId;
+                document.getElementById('editUserEmail').value = userEmail;
+                document.getElementById('editUserFirstName').value = userFirstName;
+                document.getElementById('editUserLastName').value = userLastName;
+                document.getElementById('editUserPhone').value = userPhone;
+                document.getElementById('editIsActive').checked = userIsActive;
+            }
         });
     }
 
@@ -342,7 +441,16 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('deleteUserName').textContent = userName;
         });
     }
+
+    // Очистка sessionStorage при закрытии модальных окон
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            sessionStorage.removeItem('addUserFormData');
+            sessionStorage.removeItem('editUserFormData');
+        });
+    });
 });
-    </script>
+</script>
 </body>
 </html>
