@@ -128,7 +128,7 @@ def booking_view(request):
         'time_slots': Booking.TIME_SLOTS,
         'today': date.today(),
     }
-    return render(request, 'Bookings/bookings.html', context)
+    return render(request, 'bookings/bookings.html', context)
 
 
 @login_required
@@ -245,7 +245,7 @@ def send_booking_confirmation_email(booking):
     }
 
     # Создаем HTML-сообщение для пользователя
-    user_html_message = render_to_string('Bookings/booking_confirmation_email.html', user_context)
+    user_html_message = render_to_string('bookings/booking_confirmation_email.html', user_context)
     user_plain_message = strip_tags(user_html_message)
 
     user_subject = f'Бронирование столика №{booking.table.number} - Gourmet Haven'
@@ -267,7 +267,7 @@ def send_booking_confirmation_email(booking):
         'created_at': booking.created_at.strftime('%d.%m.%Y %H:%M'),
     }
 
-    admin_html_message = render_to_string('Bookings/booking_notification_admin.html', admin_context)
+    admin_html_message = render_to_string('bookings/booking_notification_admin.html', admin_context)
     admin_plain_message = strip_tags(admin_html_message)
 
     admin_subject = f'Новое бронирование столика №{booking.table.number} - Gourmet Haven'
@@ -415,7 +415,7 @@ def admin_panel_view(request):
         'bookings_on_date': bookings_on_date,
     }
 
-    return render(request, 'Bookings/admin_panel.html', context)
+    return render(request, 'bookings/admin_panel.html', context)
 
 
 @login_required
@@ -445,7 +445,7 @@ def booking_detail_view(request, booking_id):
         'can_cancel': booking.status != 'cancelled' and not booking.is_past(),
     }
 
-    return render(request, 'Bookings/booking_detail.html', context)
+    return render(request, 'bookings/booking_detail.html', context)
 
 
 @login_required
