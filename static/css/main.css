@@ -11,11 +11,8 @@ body {
 }
 
 .text-outline {
-  text-shadow:
-    -1px -1px 0 rgba(0,0,0,0.8),
-     1px -1px 0 rgba(0,0,0,0.8),
-    -1px  1px 0 rgba(0,0,0,0.8),
-     1px  1px 0 rgba(0,0,0,0.8);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .content-box {
@@ -72,22 +69,25 @@ body {
 }
 
 .price-tag {
-  color: #ffd700;
+  color: #d4a017;
+  font-size: 1.1em;
   font-weight: bold;
-  font-size: 1.1rem;
 }
 
 .category-icon {
   font-size: 2rem;
   margin-right: 1rem;
+  margin-right: 10px;
 }
 
 .dish-badge {
-  background: linear-gradient(45deg, #8B4513, #D2691E);
+  background: #28a745;
   color: white;
-  font-size: 0.7rem;
-  padding: 0.3rem 0.6rem;
-  margin-left: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  margin-bottom: 5px;
+  display: inline-block;
 }
 
 .password-reset-container {
@@ -113,4 +113,24 @@ body {
 
 .bg-brown {
     background-color: #8B4513 !important;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.menu-item h4 {
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.menu-item p {
+  color: #6c757d;
+  line-height: 1.5;
 }

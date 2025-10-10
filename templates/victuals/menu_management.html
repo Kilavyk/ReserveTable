@@ -1,0 +1,393 @@
+<!-- templates/victuals/menu_management.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление меню - Админ-панель</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+    <!-- Включаем основной хедер -->
+    {% include 'includes/header.html' %}
+
+    <!-- Включаем навигацию админ-панели -->
+    {% include 'includes/admin_navbar.html' %}
+
+    <div class="container" style="max-width: 1200px;">
+        <!-- Сообщения -->
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Заголовок и кнопка добавления -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Управление меню</h1>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMenuItemModal">
+                + Добавить позицию
+            </button>
+        </div>
+
+        <!-- Таблица меню -->
+        <div class="card">
+            <div class="card-body p-0">
+                {% if menu_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Название</th>
+                                <th>Категория</th>
+                                <th>Тип</th>
+                                <th>Цена</th>
+                                <th>Вес/Объем</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in menu_items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.name }}</strong>
+                                    {% if item.description %}
+                                    <br><small class="text-muted">{{ item.description|truncatewords:10 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.category.name }}</td>
+                                <td>
+                                    <span class="badge {% if item.dish_type == 'food' %}bg-primary{% else %}bg-info{% endif %}">
+                                        {% if item.dish_type == 'food' %}Блюдо{% else %}Напиток{% endif %}
+                                    </span>
+                                </td>
+                               <td>
+    <span style="font-size: 1em; font-weight: normal;">{{ item.price }} ₽</span>
+</td>
+                                <td>
+                                    {% if item.weight %}
+                                        {{ item.weight }} г
+                                    {% elif item.volume %}
+                                        {{ item.volume }} мл
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if item.is_available %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if item.is_available %}Доступно{% else %}Недоступно{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-primary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editMenuItemModal"
+                                                data-item-id="{{ item.id }}"
+                                                data-item-name="{{ item.name }}"
+                                                data-item-description="{{ item.description|default:'' }}"
+                                                data-item-category="{{ item.category.id }}"
+                                                data-item-dish-type="{{ item.dish_type }}"
+                                                data-item-price="{{ item.price }}"
+                                                data-item-weight="{{ item.weight|default:'' }}"
+                                                data-item-volume="{{ item.volume|default:'' }}"
+                                                data-item-ingredients="{{ item.ingredients|default:'' }}"
+                                                data-item-is-available="{{ item.is_available }}">
+                                            Редактировать
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteMenuItemModal"
+                                                data-item-id="{{ item.id }}"
+                                                data-item-name="{{ item.name }}">
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <h5>Меню пустое</h5>
+                    <p class="text-muted mb-0">Нажмите "Добавить позицию" чтобы создать первое блюдо или напиток.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления позиции -->
+    <div class="modal fade" id="addMenuItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить позицию в меню</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'victuals:add_menu_item' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemName" class="form-label">Название *</label>
+                                    <input type="text" class="form-control" id="itemName" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemCategory" class="form-label">Категория *</label>
+                                    <select class="form-select" id="itemCategory" name="category" required>
+                                        <option value="">Выберите категорию</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="itemDescription" class="form-label">Описание</label>
+                            <textarea class="form-control" id="itemDescription" name="description" rows="2"
+                                      placeholder="Краткое описание блюда или напитка..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="itemDishType" class="form-label">Тип *</label>
+                                    <select class="form-select" id="itemDishType" name="dish_type" required>
+                                        <option value="food">Блюдо</option>
+                                        <option value="drink">Напиток</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="itemPrice" class="form-label">Цена (₽) *</label>
+                                    <input type="number" class="form-control" id="itemPrice" name="price"
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="itemWeightVolume" class="form-label">Вес/Объем</label>
+                                    <input type="number" class="form-control" id="itemWeightVolume"
+                                           name="weight" placeholder="В граммах или миллилитрах">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="itemIngredients" class="form-label">Ингредиенты</label>
+                            <textarea class="form-control" id="itemIngredients" name="ingredients" rows="3"
+                                      placeholder="Список ингредиентов через запятую..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-success">Добавить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования позиции -->
+    <div class="modal fade" id="editMenuItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать позицию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'victuals:edit_menu_item' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="editItemId" name="item_id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemName" class="form-label">Название *</label>
+                                    <input type="text" class="form-control" id="editItemName" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemCategory" class="form-label">Категория *</label>
+                                    <select class="form-select" id="editItemCategory" name="category" required>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editItemDescription" class="form-label">Описание</label>
+                            <textarea class="form-control" id="editItemDescription" name="description" rows="2"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editItemDishType" class="form-label">Тип *</label>
+                                    <select class="form-select" id="editItemDishType" name="dish_type" required>
+                                        <option value="food">Блюдо</option>
+                                        <option value="drink">Напиток</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editItemPrice" class="form-label">Цена (₽) *</label>
+                                    <input type="number" class="form-control" id="editItemPrice" name="price"
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Вес/Объем</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="editItemWeight"
+                                               name="weight" placeholder="Вес (г)">
+                                        <input type="number" class="form-control" id="editItemVolume"
+                                               name="volume" placeholder="Объем (мл)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editItemIngredients" class="form-label">Ингредиенты</label>
+                            <textarea class="form-control" id="editItemIngredients" name="ingredients" rows="3"></textarea>
+                        </div>
+
+<div class="form-check">
+    <input class="form-check-input" type="checkbox" id="editItemIsAvailable" name="is_available">
+    <label class="form-check-label" for="editItemIsAvailable">
+        Доступно для заказа
+    </label>
+</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно удаления позиции -->
+    <div class="modal fade" id="deleteMenuItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Удалить позицию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'victuals:delete_menu_item' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="deleteItemId" name="item_id">
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить позицию <strong id="deleteItemName"></strong>?</p>
+                        <p class="text-danger"><small>Это действие нельзя отменить.</small></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключение JavaScript -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    // Обработка модального окна редактирования
+    document.addEventListener('DOMContentLoaded', function() {
+        const editModal = document.getElementById('editMenuItemModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+
+                // Устанавливаем значения полей
+                document.getElementById('editItemId').value = button.getAttribute('data-item-id');
+                document.getElementById('editItemName').value = button.getAttribute('data-item-name');
+                document.getElementById('editItemDescription').value = button.getAttribute('data-item-description');
+                document.getElementById('editItemCategory').value = button.getAttribute('data-item-category');
+                document.getElementById('editItemDishType').value = button.getAttribute('data-item-dish-type');
+                document.getElementById('editItemPrice').value = parseFloat(button.getAttribute('data-item-price')).toFixed(2);
+                document.getElementById('editItemWeight').value = button.getAttribute('data-item-weight');
+                document.getElementById('editItemVolume').value = button.getAttribute('data-item-volume');
+                document.getElementById('editItemIngredients').value = button.getAttribute('data-item-ingredients');
+
+                // Устанавливаем чекбокс доступности
+                const isAvailable = button.getAttribute('data-item-is-available') === 'True';
+                document.getElementById('editItemIsAvailable').checked = isAvailable;
+
+                console.log('Price value:', button.getAttribute('data-item-price'));
+                console.log('Is available:', isAvailable);
+            });
+        }
+
+        // Обработка модального окна удаления
+        const deleteModal = document.getElementById('deleteMenuItemModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                document.getElementById('deleteItemId').value = button.getAttribute('data-item-id');
+                document.getElementById('deleteItemName').textContent = button.getAttribute('data-item-name');
+            });
+        }
+
+        // Динамическое изменение поля вес/объем для добавления
+        const dishTypeSelect = document.getElementById('itemDishType');
+        const weightVolumeInput = document.getElementById('itemWeightVolume');
+
+        if (dishTypeSelect && weightVolumeInput) {
+            dishTypeSelect.addEventListener('change', function() {
+                if (this.value === 'food') {
+                    weightVolumeInput.name = 'weight';
+                    weightVolumeInput.placeholder = 'Вес в граммах';
+                } else {
+                    weightVolumeInput.name = 'volume';
+                    weightVolumeInput.placeholder = 'Объем в миллилитрах';
+                }
+            });
+        }
+
+        // Динамическое изменение полей вес/объем для редактирования
+        const editDishTypeSelect = document.getElementById('editItemDishType');
+        if (editDishTypeSelect) {
+            editDishTypeSelect.addEventListener('change', function() {
+                const weightInput = document.getElementById('editItemWeight');
+                const volumeInput = document.getElementById('editItemVolume');
+
+                if (this.value === 'food') {
+                    weightInput.placeholder = 'Вес в граммах';
+                    volumeInput.placeholder = '';
+                } else {
+                    weightInput.placeholder = '';
+                    volumeInput.placeholder = 'Объем в миллилитрах';
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
