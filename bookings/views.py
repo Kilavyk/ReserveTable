@@ -118,6 +118,11 @@ def booking_view(request):
                     'is_available': True
                 })
 
+    # Получаем список всех пользователей для выпадающего списка (только для администраторов)
+    all_users = []
+    if request.user.is_authenticated and request.user.groups.exists():
+        all_users = CustomUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
+
     context = {
         'tables_data': tables_data,
         'selected_date': selected_date,
@@ -127,6 +132,7 @@ def booking_view(request):
         'available_tables_count': available_tables_count,
         'time_slots': Booking.TIME_SLOTS,
         'today': date.today(),
+        'all_users': all_users,  # Добавляем список пользователей в контекст
     }
     return render(request, 'bookings/bookings.html', context)
 
@@ -141,6 +147,15 @@ def create_booking_view(request):
             time_slot_str = request.POST.get('time_slot')
             guests_count = request.POST.get('guests_count')
             special_requests = request.POST.get('special_requests', '')
+
+            # Определяем пользователя для бронирования
+            user_id = request.POST.get('user_id')
+            if user_id and request.user.groups.exists():
+                # Администратор может бронировать для других пользователей
+                booking_user = get_object_or_404(CustomUser, id=user_id)
+            else:
+                # Обычный пользователь бронирует для себя
+                booking_user = request.user
 
             # Преобразование данных
             booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
@@ -178,7 +193,7 @@ def create_booking_view(request):
 
             # Создание бронирования
             booking = Booking.objects.create(
-                user=request.user,
+                user=booking_user,  # Используем определенного пользователя
                 table=table,
                 booking_date=booking_date,
                 time_slot=time_slot,
@@ -196,10 +211,15 @@ def create_booking_view(request):
             formatted_date = booking_date.strftime('%d.%m.%y')
 
             # Формируем сообщение в нужном формате
-            messages.success(request, f'Бронь столика №{table.number} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
+            if booking_user == request.user:
+                messages.success(request,
+                                 f'Бронь столика №{table.number} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
+            else:
+                messages.success(request,
+                                 f'Бронь столика №{table.number} для {booking_user.email} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
 
             if email_results['user']:
-                messages.info(request, 'Письмо с деталями бронирования отправлено на вашу почту.')
+                messages.info(request, 'Письмо с деталями бронирования отправлено на почту.')
             else:
                 messages.warning(request, 'Бронирование создано, но не удалось отправить письмо с подтверждением.')
 
