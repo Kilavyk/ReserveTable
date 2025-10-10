@@ -166,7 +166,7 @@
                     <input type="hidden" name="guests_count" id="modalGuestsCount">
 
                     <!-- Поле выбора пользователя (только для администраторов) -->
-                    {% if user.groups.exists %}
+                    {% if user.groups.exists or user.is_staff%}
                     <div class="mb-3">
                         <label for="modalUserId" class="form-label">Бронирование для пользователя:</label>
                         <select id="modalUserId" name="user_id" class="form-select">

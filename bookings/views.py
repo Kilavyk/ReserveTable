@@ -120,7 +120,7 @@ def booking_view(request):
 
     # Получаем список всех пользователей для выпадающего списка (только для администраторов)
     all_users = []
-    if request.user.is_authenticated and request.user.groups.exists():
+    if request.user.is_authenticated and request.user.groups.exists() or request.user.is_staff:
         all_users = CustomUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
 
     context = {
