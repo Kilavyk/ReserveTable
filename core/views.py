@@ -15,10 +15,6 @@ def about(request):
     return render(request, 'core/about.html')
 
 
-def menu(request):
-    return render(request, 'core/menu.html')
-
-
 def contacts(request):
     return render(request, 'core/contacts.html')
 
