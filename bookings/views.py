@@ -11,6 +11,133 @@ from users.models import CustomUser
 from .models import Booking
 
 
+def _parse_date(date_str):
+    """Парсит строку даты в объект date"""
+    if date_str:
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    return date.today()
+
+
+def _parse_guests_count(guests_count_str):
+    """Парсит количество гостей"""
+    try:
+        return int(guests_count_str) if guests_count_str else 2
+    except ValueError:
+        return 2
+
+
+def _parse_time_slot(time_slot_str):
+    """Парсит временной слот и возвращает кортеж (time_obj, display_name)"""
+    if time_slot_str:
+        try:
+            time_obj = datetime.strptime(time_slot_str, '%H:%M').time()
+            for slot_value, display_name in Booking.TIME_SLOTS:
+                if slot_value == time_obj:
+                    return time_obj, display_name
+        except ValueError:
+            pass
+    return None, ""
+
+
+def _get_default_time_slot(selected_date):
+    """Возвращает ближайший доступный временной слот для выбранной даты"""
+    now = datetime.now()
+    current_time = now.time()
+    current_date = now.date()
+
+    # Если выбранная дата - сегодня, учитываем текущее время
+    if selected_date == current_date:
+        for slot_value, display_name in Booking.TIME_SLOTS:
+            if slot_value > current_time:
+                return slot_value, display_name
+
+    # Если не сегодня или нет доступных слотов сегодня, берем первый слот
+    if Booking.TIME_SLOTS:
+        return Booking.TIME_SLOTS[0][0], Booking.TIME_SLOTS[0][1]
+
+    return None, ""
+
+
+def _get_booked_slots(selected_date):
+    """Возвращает словарь занятых слотов для выбранной даты"""
+    bookings_on_date = Booking.objects.filter(
+        booking_date=selected_date,
+        status__in=['confirmed', 'pending']
+    ).select_related('table')
+
+    booked_slots = {}
+    for booking in bookings_on_date:
+        if booking.table_id not in booked_slots:
+            booked_slots[booking.table_id] = []
+        booked_slots[booking.table_id].append(booking.time_slot)
+
+    return booked_slots
+
+
+def _check_booking_availability(table, selected_date, selected_time_slot, booked_slots):
+    """Проверяет доступность столика на выбранные дату и время"""
+    # Проверяем доступность выбранного слота для этого столика
+    is_available = (table.id not in booked_slots or
+                    selected_time_slot not in booked_slots[table.id])
+
+    # Проверяем, не прошел ли уже этот слот (для сегодняшней даты)
+    if selected_date == date.today():
+        is_available = is_available and selected_time_slot > datetime.now().time()
+
+    return is_available
+
+
+def _validate_booking_data(booking_date, time_slot, table, guests_count):
+    """Валидирует данные бронирования"""
+    # Проверка даты
+    if booking_date < date.today():
+        return False, 'Нельзя забронировать столик на прошедшую дату.'
+
+    if booking_date == date.today() and time_slot <= datetime.now().time():
+        return False, 'Нельзя забронировать столик на прошедшее время.'
+
+    # Проверка вместимости
+    if guests_count > table.max_guests:
+        return False, f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).'
+
+    # Проверка доступности временного слота
+    existing_booking = Booking.objects.filter(
+        table=table,
+        booking_date=booking_date,
+        time_slot=time_slot
+    ).exclude(status='cancelled').exists()
+
+    if existing_booking:
+        return False, 'Этот столик уже забронирован на выбранное время.'
+
+    return True, None
+
+
+def _get_booking_user(request):
+    """Определяет пользователя для бронирования"""
+    user_id = request.POST.get('user_id')
+    if user_id and (request.user.groups.exists() or request.user.is_staff):
+        # Администратор может бронировать для других пользователей
+        return get_object_or_404(CustomUser, id=user_id)
+    else:
+        # Обычный пользователь бронирует для себя
+        return request.user
+
+
+def _create_booking_success_message(booking, booking_user, request_user):
+    """Создает сообщение об успешном создании бронирования"""
+    time_display = booking.get_time_slot_display()
+    formatted_date = booking.booking_date.strftime('%d.%m.%y')
+
+    if booking_user == request_user:
+        return f'Бронь столика №{booking.table.number} подтверждена: {formatted_date}, {time_display}, {booking.guests_count} гостя.'
+    else:
+        return f'Бронь столика №{booking.table.number} для {booking_user.email} подтверждена: {formatted_date}, {time_display}, {booking.guests_count} гостя.'
+
+
 def booking_view(request):
     """Отображает страницу бронирования с выбором параметров и столиков."""
     # Если пользователь не авторизован, показываем сообщение
@@ -18,58 +145,13 @@ def booking_view(request):
         messages.info(request, 'Для бронирования столика необходимо авторизоваться.')
 
     # Получаем параметры из GET запроса или устанавливаем по умолчанию
-    selected_date_str = request.GET.get('date')
-    guests_count_str = request.GET.get('guests_count')
-    time_slot_str = request.GET.get('time_slot')
-
-    # Обработка выбранной даты
-    if selected_date_str:
-        try:
-            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            selected_date = date.today()
-    else:
-        selected_date = date.today()
-
-    # Обработка количества гостей
-    try:
-        guests_count = int(guests_count_str) if guests_count_str else 2
-    except ValueError:
-        guests_count = 2
-
-    # Обработка временного слота
-    selected_time_slot = None
-    selected_time_slot_display = ""
-    if time_slot_str:
-        try:
-            # Преобразуем строку "HH:MM" в объект time
-            selected_time_slot = datetime.strptime(time_slot_str, '%H:%M').time()
-            # Найдем отображаемое имя для этого слота
-            for slot_value, display_name in Booking.TIME_SLOTS:
-                if slot_value == selected_time_slot:
-                    selected_time_slot_display = display_name
-                    break
-        except ValueError:
-            selected_time_slot = None
-            selected_time_slot_display = ""
+    selected_date = _parse_date(request.GET.get('date'))
+    guests_count = _parse_guests_count(request.GET.get('guests_count'))
+    selected_time_slot, selected_time_slot_display = _parse_time_slot(request.GET.get('time_slot'))
 
     # Если время не выбрано, устанавливаем ближайшее доступное
     if not selected_time_slot:
-        now = datetime.now()
-        current_time = now.time()
-        current_date = now.date()
-        # Если выбранная дата - сегодня, учитываем текущее время
-        if selected_date == current_date:
-            for slot_value, display_name in Booking.TIME_SLOTS:
-                if slot_value > current_time:
-                    selected_time_slot = slot_value
-                    selected_time_slot_display = display_name
-                    break
-        else:
-            # Если не сегодня, просто первый слот
-            if Booking.TIME_SLOTS:
-                selected_time_slot = Booking.TIME_SLOTS[0][0]
-                selected_time_slot_display = Booking.TIME_SLOTS[0][1]
+        selected_time_slot, selected_time_slot_display = _get_default_time_slot(selected_date)
 
     # Получаем все активные столики, подходящие по вместимости
     suitable_tables = Table.objects.filter(
@@ -77,18 +159,8 @@ def booking_view(request):
         max_guests__gte=guests_count
     ).order_by('max_guests', 'number')
 
-    # Получаем бронирования на выбранную дату
-    bookings_on_date = Booking.objects.filter(
-        booking_date=selected_date,
-        status__in=['confirmed', 'pending']
-    ).select_related('table')
-
-    # Создаем словарь занятых временных слотов для каждого столика
-    booked_slots = {}
-    for booking in bookings_on_date:
-        if booking.table_id not in booked_slots:
-            booked_slots[booking.table_id] = []
-        booked_slots[booking.table_id].append(booking.time_slot)
+    # Получаем занятые слоты
+    booked_slots = _get_booked_slots(selected_date)
 
     # Подготавливаем данные для шаблона
     tables_data = []
@@ -97,12 +169,7 @@ def booking_view(request):
     # Проверяем, что selected_time_slot не None перед использованием
     if selected_time_slot is not None:
         for table in suitable_tables:
-            # Проверяем доступность выбранного слота для этого столика
-            is_available = (table.id not in booked_slots or
-                            selected_time_slot not in booked_slots[table.id])
-            # Проверяем, не прошел ли уже этот слот (для сегодняшней даты)
-            if selected_date == date.today():
-                is_available = is_available and selected_time_slot > datetime.now().time()
+            is_available = _check_booking_availability(table, selected_date, selected_time_slot, booked_slots)
 
             if is_available:
                 available_tables_count += 1
@@ -120,7 +187,7 @@ def booking_view(request):
 
     # Получаем список всех пользователей для выпадающего списка (только для администраторов)
     all_users = []
-    if request.user.is_authenticated and request.user.groups.exists() or request.user.is_staff:
+    if request.user.is_authenticated and (request.user.groups.exists() or request.user.is_staff):
         all_users = CustomUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'email')
 
     context = {
@@ -132,7 +199,7 @@ def booking_view(request):
         'available_tables_count': available_tables_count,
         'time_slots': Booking.TIME_SLOTS,
         'today': date.today(),
-        'all_users': all_users,  # Добавляем список пользователей в контекст
+        'all_users': all_users,
     }
     return render(request, 'bookings/bookings.html', context)
 
@@ -149,51 +216,25 @@ def create_booking_view(request):
             special_requests = request.POST.get('special_requests', '')
 
             # Определяем пользователя для бронирования
-            user_id = request.POST.get('user_id')
-            if user_id and request.user.groups.exists():
-                # Администратор может бронировать для других пользователей
-                booking_user = get_object_or_404(CustomUser, id=user_id)
-            else:
-                # Обычный пользователь бронирует для себя
-                booking_user = request.user
+            booking_user = _get_booking_user(request)
 
             # Преобразование данных
             booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d').date()
             time_slot = datetime.strptime(time_slot_str, '%H:%M').time()
             guests_count = int(guests_count)
 
-            # Проверка даты
-            if booking_date < date.today():
-                messages.error(request, 'Нельзя забронировать столик на прошедшую дату.')
-                return redirect('bookings:booking_view')
-
-            if booking_date == date.today() and time_slot <= datetime.now().time():
-                messages.error(request, 'Нельзя забронировать столик на прошедшее время.')
-                return redirect('bookings:booking_view')
-
             # Проверка столика
             table = get_object_or_404(Table, pk=table_id, is_active=True)
 
-            # Проверка вместимости
-            if guests_count > table.max_guests:
-                messages.error(request,
-                               f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).')
-                return redirect('bookings:booking_view')
-
-            # Проверка доступности временного слота (теперь по переданному времени)
-            existing_booking = Booking.objects.filter(
-                table=table,
-                booking_date=booking_date,
-                time_slot=time_slot
-            ).exclude(status='cancelled').exists()
-
-            if existing_booking:
-                messages.error(request, 'Этот столик уже забронирован на выбранное время.')
+            # Валидация данных
+            is_valid, error_message = _validate_booking_data(booking_date, time_slot, table, guests_count)
+            if not is_valid:
+                messages.error(request, error_message)
                 return redirect('bookings:booking_view')
 
             # Создание бронирования
             booking = Booking.objects.create(
-                user=booking_user,  # Используем определенного пользователя
+                user=booking_user,
                 table=table,
                 booking_date=booking_date,
                 time_slot=time_slot,
@@ -205,18 +246,9 @@ def create_booking_view(request):
             # Отправка email с подтверждением
             email_results = send_booking_confirmation_email(booking)
 
-            # Используем get_time_slot_display для получения полного отображения времени
-            time_display = booking.get_time_slot_display()
-            # Форматируем дату
-            formatted_date = booking_date.strftime('%d.%m.%y')
-
-            # Формируем сообщение в нужном формате
-            if booking_user == request.user:
-                messages.success(request,
-                                 f'Бронь столика №{table.number} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
-            else:
-                messages.success(request,
-                                 f'Бронь столика №{table.number} для {booking_user.email} подтверждена: {formatted_date}, {time_display}, {guests_count} гостя.')
+            # Формируем сообщение об успехе
+            success_message = _create_booking_success_message(booking, booking_user, request.user)
+            messages.success(request, success_message)
 
             if email_results['user']:
                 messages.info(request, 'Письмо с деталями бронирования отправлено на почту.')
@@ -343,14 +375,7 @@ def admin_panel_view(request):
     """Панель администратора для управления бронированиями"""
 
     # Получаем выбранную дату из GET параметра или используем сегодняшнюю
-    selected_date_str = request.GET.get('date')
-    if selected_date_str:
-        try:
-            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            selected_date = date.today()
-    else:
-        selected_date = date.today()
+    selected_date = _parse_date(request.GET.get('date'))
 
     # Получаем все активные столики
     tables = Table.objects.filter(is_active=True).order_by('number')
@@ -510,37 +535,23 @@ def edit_booking_view(request, booking_id):
             time_slot = datetime.strptime(time_slot_str, '%H:%M').time()
             guests_count = int(guests_count)
 
-            # Проверка даты
-            if booking_date < date.today():
-                messages.error(request, 'Нельзя забронировать столик на прошедшую дату.',
-                               extra_tags=f'booking_edit_{booking_id}')
-                return redirect('users:profile')
-
-            if booking_date == date.today() and time_slot <= datetime.now().time():
-                messages.error(request, 'Нельзя забронировать столик на прошедшее время.',
-                               extra_tags=f'booking_edit_{booking_id}')
-                return redirect('users:profile')
-
             # Проверка столика
             table = get_object_or_404(Table, pk=table_id, is_active=True)
 
-            # Проверка вместимости
-            if guests_count > table.max_guests:
-                messages.error(request,
-                               f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).',
-                               extra_tags=f'booking_edit_{booking_id}')
-                return redirect('users:profile')
+            # Валидация данных (исключая текущее бронирование)
+            is_valid, error_message = _validate_booking_data(booking_date, time_slot, table, guests_count)
+            if not is_valid:
+                # Дополнительная проверка на существующее бронирование (исключая текущее)
+                existing_booking = Booking.objects.filter(
+                    table=table,
+                    booking_date=booking_date,
+                    time_slot=time_slot
+                ).exclude(id=booking_id).exclude(status='cancelled').exists()
 
-            # Проверка доступности временного слота (исключая текущее бронирование)
-            existing_booking = Booking.objects.filter(
-                table=table,
-                booking_date=booking_date,
-                time_slot=time_slot
-            ).exclude(id=booking_id).exclude(status='cancelled').exists()
+                if existing_booking:
+                    error_message = 'Этот столик уже забронирован на выбранное время.'
 
-            if existing_booking:
-                messages.error(request, 'Этот столик уже забронирован на выбранное время.',
-                               extra_tags=f'booking_edit_{booking_id}')
+                messages.error(request, error_message, extra_tags=f'booking_edit_{booking_id}')
                 return redirect('users:profile')
 
             # Обновление бронирования

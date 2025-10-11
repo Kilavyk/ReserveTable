@@ -14,7 +14,50 @@ from .models import CustomUser
 from bookings.models import Booking
 
 
+def _send_email(subject, template_name, context, recipient_list):
+    """Вспомогательная функция для отправки email"""
+    try:
+        send_mail(
+            subject=subject,
+            message="",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=recipient_list,
+            html_message=render_to_string(template_name, context),
+        )
+        return True
+    except Exception as e:
+        print(f"Ошибка отправки email: {e}")
+        return False
+
+
+def _handle_form_errors(form, request):
+    """Обработка ошибок формы и добавление их в сообщения"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            messages.error(request, f"{error}")
+
+
+def _get_redirect_url(request, next_url_param='next'):
+    """Получение URL для редиректа с учетом next параметра"""
+    next_url = request.POST.get(next_url_param, '')
+    if next_url:
+        return next_url
+    return request.META.get('HTTP_REFERER', 'core:index')
+
+
+def _authenticate_and_login(request, email, password):
+    """Аутентификация и вход пользователя"""
+    user = authenticate(request, email=email, password=password)
+
+    if user is not None and user.is_active:
+        login(request, user)
+        messages.success(request, 'Вы успешно вошли в систему.')
+        return user
+    return None
+
+
 def custom_login_view(request):
+    """Обрабатывает аутентификацию и вход пользователя в систему!"""
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         next_url = request.POST.get('next', '')
@@ -23,21 +66,19 @@ def custom_login_view(request):
             email = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
 
-            user = authenticate(request, email=email, password=password)
-
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-                    messages.success(request, 'Вы успешно вошли в систему.')
-
-                    if next_url:
-                        return redirect(next_url)
-                    return redirect('core:index')
-                else:
+            user = _authenticate_and_login(request, email, password)
+            if user:
+                if next_url:
+                    return redirect(next_url)
+                return redirect('core:index')
+            else:
+                # Обработка неактивного пользователя
+                try:
+                    user = CustomUser.objects.get(email=email)
                     if user.verification_token:
                         messages.error(
                             request,
-                            'Ваш аккаунт временно заблокирован. Завершите восстановление пароля по ссылке из письма.',
+                            'Завершите восстановление пароля по ссылке из письма.',
                             extra_tags='password_reset error'
                         )
                     else:
@@ -45,12 +86,12 @@ def custom_login_view(request):
                             request,
                             'Ваш аккаунт не активирован. Проверьте вашу почту для подтверждения email.'
                         )
-            else:
-                messages.error(request, 'Неверный email или пароль.')
+                except CustomUser.DoesNotExist:
+                    messages.error(request, 'Неверный email или пароль.')
         else:
             messages.error(request, 'Неверный email или пароль.')
 
-        return redirect(request.META.get('HTTP_REFERER', 'core:index'))
+        return redirect(_get_redirect_url(request))
 
     return redirect('core:index')
 
@@ -67,43 +108,35 @@ def custom_register_view(request):
             user.save()
 
             # Отправка email для верификации
-            try:
-                send_mail(
-                    subject="Подтверждение регистрации",
-                    message="",
-                    from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[user.email],
-                    html_message=render_to_string(
-                        "users/verification_email.html",
-                        {
-                            "user": user,
-                            "domain": getattr(settings, 'DOMAIN', request.get_host()),
-                            "token": token,
-                        },
-                    ),
-                )
+            email_sent = _send_email(
+                subject="Подтверждение регистрации",
+                template_name="users/verification_email.html",
+                context={
+                    "user": user,
+                    "domain": getattr(settings, 'DOMAIN', request.get_host()),
+                    "token": token,
+                },
+                recipient_list=[user.email]
+            )
+
+            if email_sent:
                 messages.success(
                     request,
                     "Регистрация прошла успешно! Пожалуйста, проверьте вашу почту для подтверждения email."
                 )
-            except Exception as e:
+            else:
                 messages.error(
                     request,
                     "Регистрация прошла успешно, но не удалось отправить письмо подтверждения. "
                     "Свяжитесь с администрацией."
                 )
-                print(f"Ошибка отправки email: {e}")
 
             if next_url:
                 return redirect(next_url)
             return redirect('core:index')
         else:
-            # Передаем ошибки формы в сообщения
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{error}")
-
-            return redirect(request.META.get('HTTP_REFERER', 'core:index'))
+            _handle_form_errors(form, request)
+            return redirect(_get_redirect_url(request))
 
     return redirect('core:index')
 
@@ -131,15 +164,25 @@ def custom_logout_view(request):
     return redirect('core:index')
 
 
+def _get_user_bookings_stats(user):
+    """Получение статистики бронирований пользователя"""
+    bookings_list = Booking.objects.filter(user=user).select_related('table').order_by('-created_at')
+
+    return {
+        'bookings_list': bookings_list,
+        'bookings_count': bookings_list.count(),
+        'active_bookings_count': bookings_list.filter(status='confirmed').count(),
+        'pending_bookings_count': bookings_list.filter(status='pending').count(),
+    }
+
+
 @login_required
 def profile_view(request):
     """Отображает страницу личного кабинета пользователя."""
-
-    # Получаем все бронирования пользователя, отсортированные по дате создания (новые сверху)
-    bookings_list = Booking.objects.filter(user=request.user).select_related('table').order_by('-created_at')
+    stats = _get_user_bookings_stats(request.user)
 
     # Пагинация - 5 бронирований на страницу
-    paginator = Paginator(bookings_list, 5)
+    paginator = Paginator(stats['bookings_list'], 5)
     page_number = request.GET.get('page')
 
     try:
@@ -151,16 +194,11 @@ def profile_view(request):
         # Если page вне диапазона, показываем последнюю страницу
         bookings = paginator.page(paginator.num_pages)
 
-    # Статистика для сайдбара
-    bookings_count = bookings_list.count()
-    active_bookings_count = bookings_list.filter(status='confirmed').count()
-    pending_bookings_count = bookings_list.filter(status='pending').count()
-
     context = {
         'bookings': bookings,
-        'bookings_count': bookings_count,
-        'active_bookings_count': active_bookings_count,
-        'pending_bookings_count': pending_bookings_count,
+        'bookings_count': stats['bookings_count'],
+        'active_bookings_count': stats['active_bookings_count'],
+        'pending_bookings_count': stats['pending_bookings_count'],
         'time_slots': Booking.TIME_SLOTS,
     }
 
@@ -209,6 +247,45 @@ def profile_edit_view(request):
     return redirect('users:profile')
 
 
+def _handle_password_reset_request(user, request):
+    """Обработка запроса на сброс пароля для конкретного пользователя"""
+    reset_token = secrets.token_hex(32)
+    user.verification_token = reset_token
+    user.is_active = False  # Делаем аккаунт неактивным до сброса пароля
+    user.save()
+
+    # Отправка email для сброса пароля
+    email_sent = _send_email(
+        subject="Восстановление пароля",
+        template_name="users/password_reset_email.html",
+        context={
+            "user": user,
+            "domain": getattr(settings, 'DOMAIN', request.get_host()),
+            "token": reset_token,
+        },
+        recipient_list=[user.email]
+    )
+
+    if email_sent:
+        messages.success(
+            request,
+            "Инструкции по восстановлению пароля отправлены на ваш email.",
+            extra_tags="password_reset success"
+        )
+    else:
+        # Если не удалось отправить email, возвращаем аккаунт в активное состояние
+        user.is_active = True
+        user.verification_token = None
+        user.save()
+        messages.error(
+            request,
+            "Не удалось отправить письмо с инструкциями. Попробуйте позже или свяжитесь с администрацией.",
+            extra_tags="password_reset error"
+        )
+
+    return email_sent
+
+
 def password_reset_request(request):
     """Обработка запроса на восстановление пароля"""
     if request.method == 'POST':
@@ -217,45 +294,7 @@ def password_reset_request(request):
 
         try:
             user = CustomUser.objects.get(email=email)
-
-            # Генерируем токен для сброса пароля и делаем аккаунт неактивным
-            reset_token = secrets.token_hex(32)
-            user.verification_token = reset_token
-            user.is_active = False  # Делаем аккаунт неактивным до сброса пароля
-            user.save()
-
-            # Отправка email для сброса пароля
-            try:
-                send_mail(
-                    subject="Восстановление пароля",
-                    message="",
-                    from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[user.email],
-                    html_message=render_to_string(
-                        "users/password_reset_email.html",
-                        {
-                            "user": user,
-                            "domain": getattr(settings, 'DOMAIN', request.get_host()),
-                            "token": reset_token,
-                        },
-                    ),
-                )
-                messages.success(
-                    request,
-                    "Инструкции по восстановлению пароля отправлены на ваш email.",
-                    extra_tags="password_reset success"
-                )
-            except Exception as e:
-                # Если не удалось отправить email, возвращаем аккаунт в активное состояние
-                user.is_active = True
-                user.verification_token = None
-                user.save()
-                messages.error(
-                    request,
-                    "Не удалось отправить письмо с инструкциями. Попробуйте позже или свяжитесь с администрацией.",
-                    extra_tags="password_reset error"
-                )
-                print(f"Ошибка отправки email: {e}")
+            _handle_password_reset_request(user, request)
 
         except CustomUser.DoesNotExist:
             # Не сообщаем, что пользователь не найден (в целях безопасности)
@@ -334,12 +373,30 @@ def password_reset_confirm(request, token):
         'user': user
     })
 
+
+def _validate_user_fields(first_name, last_name, phone_number, request):
+    """Валидация полей пользователя"""
+    if len(first_name) > 30:
+        messages.error(request, 'Имя не может быть длиннее 30 символов.')
+        return False
+
+    if len(last_name) > 30:
+        messages.error(request, 'Фамилия не может быть длиннее 30 символов.')
+        return False
+
+    if len(phone_number) > 20:
+        messages.error(request, 'Телефон не может быть длиннее 20 символов.')
+        return False
+
+    return True
+
+
 @login_required
 @permission_required('users.view_customuser', raise_exception=True)
 def users_management_view(request):
     """Страница управления пользователями"""
-    # Получаем всех пользователей, отсортированных по дате регистрации (новые сверху)
-    users_list = CustomUser.objects.all().order_by('-date_joined')
+    # Получаем всех пользователей, отсортированных по email (алфавитный порядок)
+    users_list = CustomUser.objects.all().order_by('email')
 
     # Пагинация - 50 пользователей на страницу
     paginator = Paginator(users_list, 50)
@@ -379,16 +436,7 @@ def add_user_view(request):
                 return redirect('users:users_management')
 
             # Валидация длины полей
-            if len(first_name) > 30:
-                messages.error(request, 'Имя не может быть длиннее 30 символов.')
-                return redirect('users:users_management')
-
-            if len(last_name) > 30:
-                messages.error(request, 'Фамилия не может быть длиннее 30 символов.')
-                return redirect('users:users_management')
-
-            if len(phone_number) > 20:
-                messages.error(request, 'Телефон не может быть длиннее 20 символов.')
+            if not _validate_user_fields(first_name, last_name, phone_number, request):
                 return redirect('users:users_management')
 
             # Создаем пользователя
@@ -435,16 +483,7 @@ def edit_user_view(request):
                 return redirect('users:users_management')
 
             # Валидация длины полей
-            if len(first_name) > 30:
-                messages.error(request, 'Имя не может быть длиннее 30 символов.')
-                return redirect('users:users_management')
-
-            if len(last_name) > 30:
-                messages.error(request, 'Фамилия не может быть длиннее 30 символов.')
-                return redirect('users:users_management')
-
-            if len(phone_number) > 20:
-                messages.error(request, 'Телефон не может быть длиннее 20 символов.')
+            if not _validate_user_fields(first_name, last_name, phone_number, request):
                 return redirect('users:users_management')
 
             # Валидация email
