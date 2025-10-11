@@ -6,44 +6,44 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; }
+        .header { text-align: center; }
         .content { padding: 20px; }
         .booking-info { background: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
         .footer { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Gourmet Haven</h1>
-            <h2>Бронирование столика</h2>
-        </div>
-
-        <div class="content">
-            <p>Уважаемый(ая) {{ user_first_name|default:user_email }},</p>
-
-            <p>Ваше бронирование получено и находится на рассмотрении.</p>
-
-            <div class="booking-info">
-                <h3>Детали бронирования:</h3>
-                <p><strong>Столик №{{ table_number }}</strong></p>
-                <p><strong>Дата:</strong> {{ formatted_date }}</p>
-                <p><strong>Время:</strong> {{ time_display }}</p>
-                <p><strong>Количество гостей:</strong> {{ guests_count }}</p>
-                {% if special_requests %}
-                <p><strong>Особые пожелания:</strong> {{ special_requests }}</p>
-                {% endif %}
-            </div>
-
-            <p><strong>Ваш столик в ближайшее время будет подтверждён.</strong></p>
-            <p>При необходимости с Вами свяжется администрация ресторана.</p>
-
-            <p>С уважением,<br>Команда Gourmet Haven</p>
-        </div>
-
-        <div class="footer">
-            <p>Это письмо отправлено автоматически. Пожалуйста, не отвечайте на него.</p>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>Gourmet Haven</h1>
+        <h2>Бронирование столика</h2>
     </div>
+
+    <div class="content">
+        <p>Уважаемый(ая) {{ user_first_name|default:user_email }},</p>
+
+        <p>Ваше бронирование получено и находится на рассмотрении.</p>
+
+        <div class="booking-info">
+            <h3>Детали бронирования:</h3>
+            <p><strong>Столик №{{ table_number }}</strong></p>
+            <p><strong>Дата:</strong> {{ formatted_date }}</p>
+            <p><strong>Время:</strong> {{ time_display }}</p>
+            <p><strong>Количество гостей:</strong> {{ guests_count }}</p>
+            {% if special_requests %}
+            <p><strong>Особые пожелания:</strong> {{ special_requests }}</p>
+            {% endif %}
+        </div>
+
+        <p><strong>Ваш столик в ближайшее время будет подтверждён.</strong></p>
+        <p>При необходимости с Вами свяжется администрация ресторана.</p>
+
+        <p>С уважением,<br>Команда Gourmet Haven</p>
+    </div>
+
+    <div class="footer">
+        <p>Это письмо отправлено автоматически. Пожалуйста, не отвечайте на него.</p>
+    </div>
+</div>
 </body>
 </html>

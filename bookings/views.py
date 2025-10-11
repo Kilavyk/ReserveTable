@@ -253,6 +253,12 @@ def send_booking_confirmation_email(booking):
     user_email = getattr(user, 'email', '')
     user_phone = getattr(user, 'phone_number', 'не указан')
 
+    # Получаем домен для формирования полных ссылок
+    domain = settings.DOMAIN
+
+    # Формируем полный URL для страницы бронирования
+    booking_detail_url = f"{domain}/bookings/booking/{booking.id}/"
+
     # Отправка подтверждения пользователю
     user_context = {
         'user_first_name': user_first_name,
@@ -285,6 +291,8 @@ def send_booking_confirmation_email(booking):
         'special_requests': booking.special_requests or 'не указаны',
         'booking_status': booking.get_status_display(),
         'created_at': booking.created_at.strftime('%d.%m.%Y %H:%M'),
+        'domain': domain,
+        'booking_detail_url': booking_detail_url,
     }
 
     admin_html_message = render_to_string('bookings/booking_notification_admin.html', admin_context)
