@@ -20,7 +20,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "bookings",
     "core",
     "tables",
@@ -43,7 +42,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        'DIRS': [BASE_DIR / 'templates'],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -112,11 +111,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = "users.CustomUser"
 
-LOGIN_URL = '/users/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = "/users/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -132,7 +131,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 DOMAIN = "158.160.13.132"
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://158.160.13.132',
-    'http://158.160.13.132:8000',
-    'http://localhost:8000',  # Для локальной разработки
+    "http://158.160.13.132",
+    "http://158.160.13.132:8000",
+    "http://localhost:8000",  # Для локальной разработки
 ]

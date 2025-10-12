@@ -1,19 +1,31 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+
 from .models import CustomUser
 
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'phone_number')
+        fields = ("email", "first_name", "last_name", "phone_number")
 
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'phone_number', 'photo', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+        fields = (
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "photo",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "groups",
+            "user_permissions",
+        )
 
 
 class CustomUserAdmin(UserAdmin):
@@ -21,35 +33,69 @@ class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm
     model = CustomUser
 
-    list_display = ('email', 'first_name', 'last_name', 'phone_number', 'is_staff', 'is_active', 'date_joined', 'email_verified')
-    list_filter = ('is_staff', 'is_active', 'date_joined')
-    list_editable = ('is_active', 'is_staff')
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "phone_number",
+        "is_staff",
+        "is_active",
+        "date_joined",
+        "email_verified",
+    )
+    list_filter = ("is_staff", "is_active", "date_joined")
+    list_editable = ("is_active", "is_staff")
 
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Персональная информация', {'fields': ('first_name', 'last_name', 'phone_number', 'photo')}),
-        ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
-        ('Верификация', {'fields': ('verification_token',)}),
+        (None, {"fields": ("email", "password")}),
+        (
+            "Персональная информация",
+            {"fields": ("first_name", "last_name", "phone_number", "photo")},
+        ),
+        (
+            "Права доступа",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        ("Важные даты", {"fields": ("last_login", "date_joined")}),
+        ("Верификация", {"fields": ("verification_token",)}),
     )
 
     add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'first_name', 'last_name', 'phone_number'),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "email",
+                    "password1",
+                    "password2",
+                    "first_name",
+                    "last_name",
+                    "phone_number",
+                ),
+            },
+        ),
     )
 
-    search_fields = ('email', 'first_name', 'last_name', 'phone_number')
-    ordering = ('email',)
-    filter_horizontal = ('groups', 'user_permissions')
-    readonly_fields = ('date_joined', 'last_login', 'verification_token')
+    search_fields = ("email", "first_name", "last_name", "phone_number")
+    ordering = ("email",)
+    filter_horizontal = ("groups", "user_permissions")
+    readonly_fields = ("date_joined", "last_login", "verification_token")
 
     def email_verified(self, obj):
         """Показывает статус верификации email"""
         return obj.is_active and obj.verification_token is None
+
     email_verified.boolean = True
-    email_verified.short_description = 'Email подтверждён'
+    email_verified.short_description = "Email подтверждён"
 
 
 admin.site.register(CustomUser, CustomUserAdmin)

@@ -3,8 +3,9 @@
 import os
 import sys
 from contextlib import contextmanager
-from dotenv import load_dotenv
+
 import psycopg2
+from dotenv import load_dotenv
 from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -16,7 +17,7 @@ DB_CONFIG = {
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD"),
     "host": os.getenv("DB_HOST", "localhost"),
-    "port": os.getenv("DB_PORT", "5432")
+    "port": os.getenv("DB_PORT", "5432"),
 }
 
 DB_NAME = os.getenv("DB_NAME")
@@ -48,8 +49,7 @@ def check_env_vars():
 def database_exists(cursor, db_name):
     """Проверяет существование базы данных"""
     cursor.execute(
-        "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s",
-        (db_name,)
+        "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (db_name,)
     )
     return cursor.fetchone() is not None
 
@@ -70,10 +70,12 @@ def main():
                 print(f"База данных '{DB_NAME}' успешно создана!")
 
     except psycopg2.OperationalError as e:
-        print(f"""Ошибка подключения к PostgreSQL: {e}
+        print(
+            f"""Ошибка подключения к PostgreSQL: {e}
     Убедитесь, что:
     - PostgreSQL запущен
-    - Пользователь и пароль верные""")
+    - Пользователь и пароль верные"""
+        )
         sys.exit(1)
 
     except Exception as e:

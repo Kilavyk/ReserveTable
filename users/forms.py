@@ -1,5 +1,6 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
 from .models import CustomUser
 
 
@@ -16,7 +17,7 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
     email = forms.EmailField(
         label="Email",
         widget=forms.EmailInput(attrs={"autocomplete": "username"}),
-        help_text="Обязательное поле. Введите ваш email."
+        help_text="Обязательное поле. Введите ваш email.",
     )
 
     phone_number = forms.CharField(
@@ -24,7 +25,7 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
         required=False,
         label="Номер телефона",
         widget=forms.TextInput(attrs={"placeholder": "+7 (XXX) XXX-XX-XX"}),
-        help_text="Необязательное поле. Для связи с вами."
+        help_text="Необязательное поле. Для связи с вами.",
     )
 
     password1 = forms.CharField(
@@ -40,12 +41,19 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
 
     class Meta:
         model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'phone_number', 'password1', 'password2')
+        fields = (
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "password1",
+            "password2",
+        )
 
     def clean_email(self):
-        email = self.cleaned_data.get('email').lower()
+        email = self.cleaned_data.get("email").lower()
         if CustomUser.objects.filter(email=email).exists():
-            raise forms.ValidationError('Данный email уже зарегистрирован.')
+            raise forms.ValidationError("Данный email уже зарегистрирован.")
         return email
 
     def save(self, commit=True):
@@ -58,8 +66,7 @@ class CustomUserCreationForm(BaseFormStyle, UserCreationForm):
 
 class CustomAuthenticationForm(BaseFormStyle, AuthenticationForm):
     username = forms.EmailField(
-        label="Email",
-        widget=forms.EmailInput(attrs={"autocomplete": "username"})
+        label="Email", widget=forms.EmailInput(attrs={"autocomplete": "username"})
     )
     password = forms.CharField(
         label="Пароль",
@@ -70,31 +77,43 @@ class CustomAuthenticationForm(BaseFormStyle, AuthenticationForm):
 class UserProfileForm(BaseFormStyle, forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'phone_number', 'photo')
+        fields = ("first_name", "last_name", "phone_number", "photo")
 
     def clean_photo(self):
-        photo = self.cleaned_data.get('photo')
+        photo = self.cleaned_data.get("photo")
         if photo:
             # Проверка размера файла (максимум 5MB)
             if photo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError('Размер файла не должен превышать 5MB.')
+                raise forms.ValidationError("Размер файла не должен превышать 5MB.")
 
             # Проверка типа файла
-            allowed_types = ['image/jpeg', 'image/png']
+            allowed_types = ["image/jpeg", "image/png"]
             if photo.content_type not in allowed_types:
-                raise forms.ValidationError('Допустимы только файлы изображений (JPEG, PNG).')
+                raise forms.ValidationError(
+                    "Допустимы только файлы изображений (JPEG, PNG)."
+                )
 
         return photo
 
 
 class CustomUserAdminForm(forms.ModelForm):
     """Форма для администрирования пользователей"""
+
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'placeholder': 'Оставьте пустым, если не нужно менять'}),
+        widget=forms.PasswordInput(
+            attrs={"placeholder": "Оставьте пустым, если не нужно менять"}
+        ),
         required=False,
-        label='Пароль'
+        label="Пароль",
     )
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'first_name', 'last_name', 'phone_number', 'is_active', 'is_staff']
+        fields = [
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "is_active",
+            "is_staff",
+        ]

@@ -1,16 +1,16 @@
 # python create_administrator_group.py
 
 import os
+
 import django
-
-
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+
 from bookings.models import Booking
 from tables.models import Table
 from users.models import CustomUser
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 
@@ -18,7 +18,7 @@ def create_administrator_group():
     """Создает группу администраторов с необходимыми правами"""
 
     # Создаем или получаем группу
-    group, created = Group.objects.get_or_create(name='Администраторы')
+    group, created = Group.objects.get_or_create(name="Администраторы")
 
     if created:
         print("Группа 'Администраторы' создана успешно!")
@@ -34,28 +34,34 @@ def create_administrator_group():
     booking_permissions = Permission.objects.filter(
         content_type=booking_content_type,
         codename__in=[
-            'add_booking', 'change_booking', 'delete_booking', 'view_booking'
-        ]
+            "add_booking",
+            "change_booking",
+            "delete_booking",
+            "view_booking",
+        ],
     )
 
     # Добавляем разрешения для столиков
     table_permissions = Permission.objects.filter(
         content_type=table_content_type,
-        codename__in=[
-            'add_table', 'change_table', 'delete_table', 'view_table'
-        ]
+        codename__in=["add_table", "change_table", "delete_table", "view_table"],
     )
 
     # Добавляем разрешения для пользователей
     user_permissions = Permission.objects.filter(
         content_type=user_content_type,
         codename__in=[
-            'add_customuser', 'change_customuser', 'delete_customuser', 'view_customuser'
-        ]
+            "add_customuser",
+            "change_customuser",
+            "delete_customuser",
+            "view_customuser",
+        ],
     )
 
     # Добавляем все разрешения в группу
-    all_permissions = list(booking_permissions) + list(table_permissions) + list(user_permissions)
+    all_permissions = (
+        list(booking_permissions) + list(table_permissions) + list(user_permissions)
+    )
     group.permissions.set(all_permissions)
 
     print(f"Добавлено {len(all_permissions)} разрешений в группу 'Администраторы'")
@@ -68,5 +74,5 @@ def create_administrator_group():
     return group
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     create_administrator_group()
