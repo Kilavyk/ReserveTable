@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date
 from tables.models import Table
 from users.models import CustomUser
 from .models import Booking
@@ -101,7 +101,7 @@ def _validate_booking_data(booking_date, time_slot, table, guests_count):
 
     # Проверка вместимости
     if guests_count > table.max_guests:
-        return False, f'Количество гостей ({guests_count}) превышает максимальную вместимость столика ({table.max_guests}).'
+        return False, f'Количество гостей ({guests_count}) превышает вместимость столика ({table.max_guests}).'
 
     # Проверка доступности временного слота
     existing_booking = Booking.objects.filter(

@@ -9,7 +9,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 import secrets
 
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm
 from .models import CustomUser
 from bookings.models import Booking
 

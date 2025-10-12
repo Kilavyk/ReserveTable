@@ -51,7 +51,7 @@ def feedback(request):
             }
 
             # 1. Письмо владельцам сайта (HTML)
-            owner_subject = f'Новое сообщение обратной связи'
+            owner_subject = 'Новое сообщение обратной связи'
             if name:
                 owner_subject += f' от {name}'
 
@@ -94,6 +94,8 @@ def feedback(request):
 
         except Exception as e:
             messages.error(request, 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.')
+            # Логируем ошибку для отладки
+            print(f"Ошибка отправки сообщения: {e}")
 
         return redirect('core:index')
 

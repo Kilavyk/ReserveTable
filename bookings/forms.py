@@ -1,6 +1,6 @@
 from django import forms
 from .models import Booking
-from datetime import date, datetime
+from datetime import date
 
 
 class BookingForm(forms.ModelForm):

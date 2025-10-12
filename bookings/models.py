@@ -3,6 +3,7 @@ from django.conf import settings
 from tables.models import Table
 from datetime import datetime, time
 
+
 class Booking(models.Model):
     STATUS_CHOICES = [
         ('confirmed', 'Подтверждено'),

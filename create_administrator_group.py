@@ -3,14 +3,15 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-django.setup()
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from bookings.models import Booking
 from tables.models import Table
 from users.models import CustomUser
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
 
 
 def create_administrator_group():

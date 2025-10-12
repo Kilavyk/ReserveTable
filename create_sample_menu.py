@@ -3,13 +3,12 @@
 import os
 import django
 import sys
+from victuals.models import Category, MenuItem
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 django.setup()
-
-from victuals.models import Category, MenuItem
 
 
 def create_sample_menu():
@@ -279,7 +278,6 @@ def create_sample_menu():
     for category in Category.objects.all().order_by('order'):
         count = MenuItem.objects.filter(category=category).count()
         print(f"  {category.name}: {count} позиций")
-
 
 
 if __name__ == '__main__':
