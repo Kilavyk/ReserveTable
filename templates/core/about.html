@@ -1,5 +1,6 @@
 <!-- templates/core/about.html -->
 {% load static %}
+{% load content_tags %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -26,17 +27,15 @@
                 <div class="col-lg-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-body p-4">
-                            <h2 class="text-center mb-4">История ресторана</h2>
+                            <h2 class="text-center mb-4">
+                                {% get_content 'about_history_title' 'ЗАГОЛОВОК БЛОКА - история ресторана' %}
+                            </h2>
                             <p class="lead">
-                                В 2024 году один мечтатель решил, что пора наконец-то выучить Python.
-                                Его первое приложение — скромное приложение которое хранит русские и английские слова и
-                                предлагает пользователю их угадывать.
+                                {% get_content 'about_history_content' 'ОСНОВНОЙ ТЕКСТ ИСТОРИИ РЕСТОРАНА - первый абзац' %}
                             </p>
                             <p>
-                                От "Hello World" до "Hello Gourmet Haven" — так небольшой словарный тренажер превратился
-                                в целый ресторанный сайт.
+                                {% get_content 'about_history_content_extra' 'ДОПОЛНИТЕЛЬНЫЙ ТЕКСТ ИСТОРИИ РЕСТОРАНА - второй абзац' %}
                             </p>
-
                         </div>
                     </div>
                 </div>
@@ -45,20 +44,25 @@
                 <div class="col-lg-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-body p-4">
-                            <h2 class="text-center mb-4">Миссия и ценности</h2>
+                            <h2 class="text-center mb-4">
+                                {% get_content 'about_mission_title' 'ЗАГОЛОВОК БЛОКА - миссия и ценности' %}
+                            </h2>
                             <p>
-                                Наша миссия — создавать незабываемые гастрономические впечатления, используя только
-                                лучшие ингредиенты и инновационные подходы.
+                                {% get_content 'about_mission_content' 'ОСНОВНОЙ ТЕКСТ МИССИИ РЕСТОРАНА' %}
                             </p>
                             <ul class="list-unstyled">
-                                <li class="mb-2"><strong>Качество:</strong> Мы используем только свежие и качественные
-                                    продукты.
+                                <li class="mb-2"><strong>Качество:</strong>
+                                    {% get_content 'about_quality' 'ОПИСАНИЕ ЦЕННОСТИ - качество' %}
                                 </li>
-                                <li class="mb-2"><strong>Гостеприимство:</strong> Каждый гость — как дома.</li>
-                                <li class="mb-2"><strong>Инновации:</strong> Современные технологии в традиционной
-                                    кухне.
+                                <li class="mb-2"><strong>Гостеприимство:</strong>
+                                    {% get_content 'about_hospitality' 'ОПИСАНИЕ ЦЕННОСТИ - гостеприимство' %}
                                 </li>
-                                <li class="mb-2"><strong>Устойчивость:</strong> Мы заботимся о природе и обществе.</li>
+                                <li class="mb-2"><strong>Инновации:</strong>
+                                    {% get_content 'about_innovation' 'ОПИСАНИЕ ЦЕННОСТИ - инновации' %}
+                                </li>
+                                <li class="mb-2"><strong>Устойчивость:</strong>
+                                    {% get_content 'about_sustainability' 'ОПИСАНИЕ ЦЕННОСТИ - устойчивость' %}
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -73,24 +77,36 @@
                 <div class="col-md-4 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Шеф-повар Алексей Петров</h5>
-                            <p class="card-text">Обладатель множества наград, специалист по международной кухне.</p>
+                            <h5 class="card-title">
+                                {% get_content 'about_team_chef' 'ИМЯ И ДОЛЖНОСТЬ - шеф-повар' %}
+                            </h5>
+                            <p class="card-text">
+                                {% get_content 'about_team_chef_desc' 'ОПИСАНИЕ СПЕЦИАЛИСТА - шеф-повар' %}
+                            </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Менеджер по обслуживанию Мария Соколова</h5>
-                            <p class="card-text">Отвечает за безупречный сервис и комфорт наших гостей.</p>
+                            <h5 class="card-title">
+                                {% get_content 'about_team_manager' 'ИМЯ И ДОЛЖНОСТЬ - менеджер' %}
+                            </h5>
+                            <p class="card-text">
+                                {% get_content 'about_team_manager_desc' 'ОПИСАНИЕ СПЕЦИАЛИСТА - менеджер' %}
+                            </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Сомелье Иван Козлов</h5>
-                            <p class="card-text">Эксперт по винам, подберёт идеальное сочетание к вашему блюду.</p>
+                            <h5 class="card-title">
+                                {% get_content 'about_team_sommelier' 'ИМЯ И ДОЛЖНОСТЬ - сомелье' %}
+                            </h5>
+                            <p class="card-text">
+                                {% get_content 'about_team_sommelier_desc' 'ОПИСАНИЕ СПЕЦИАЛИСТА - сомелье' %}
+                            </p>
                         </div>
                     </div>
                 </div>

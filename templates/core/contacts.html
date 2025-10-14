@@ -1,5 +1,6 @@
 <!-- templates/core/contacts.html -->
 {% load static %}
+{% load content_tags %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -16,7 +17,9 @@
     <div class="content-box p-4">
         <!-- Герой-секция -->
         <section class="text-center mb-5">
-            <h1 class="display-4 mb-3 text-outline">Свяжитесь с нами</h1>
+            <h1 class="display-4 mb-3 text-outline">
+                {% get_content 'contacts_welcome' 'ЗАГОЛОВОК СТРАНИЦЫ КОНТАКТОВ' %}
+            </h1>
         </section>
 
         <!-- Основная контактная информация -->
@@ -28,8 +31,7 @@
                             <div class="h3 mb-3">📍</div>
                             <h5 class="card-title">Наш адрес</h5>
                             <p class="card-text">
-                                г. Москва, ул. Вкусная, д. 42<br>
-                                <small class="text-muted">Метро "Аппетитная", 5 минут пешком</small>
+                                {% get_content 'contacts_address' 'ПОЛНЫЙ АДРЕС РЕСТОРАНА' %}<br>
                             </p>
                         </div>
                     </div>
@@ -41,8 +43,7 @@
                             <div class="h3 mb-3">📞</div>
                             <h5 class="card-title">Телефон</h5>
                             <p class="card-text">
-                                +7 (495) 123-45-67<br>
-                                <small class="text-muted">Для заказов и бронирования</small>
+                                {% get_content 'contacts_phone' 'ОСНОВНОЙ ТЕЛЕФОН РЕСТОРАНА' %}<br>
                             </p>
                         </div>
                     </div>
@@ -54,8 +55,7 @@
                             <div class="h3 mb-3">✉️</div>
                             <h5 class="card-title">Электронная почта</h5>
                             <p class="card-text">
-                                info@gourmethaven.ru<br>
-                                <small class="text-muted">Отвечаем в течение 2 часов</small>
+                                {% get_content 'contacts_email' 'ОСНОВНОЙ EMAIL РЕСТОРАНА' %}<br>
                             </p>
                         </div>
                     </div>
@@ -73,11 +73,12 @@
                             <ul class="list-unstyled">
                                 <li class="d-flex justify-content-between py-2">
                                     <span>Ежедневно</span>
-                                    <strong>12:00 - 00:00</strong>
+                                    <strong>
+                                        {% get_content 'contacts_hours' 'ЧАСЫ РАБОТЫ РЕСТОРАНА' %}
+                                    </strong>
                                 </li>
                             </ul>
                             <div class="text-center mt-4">
-                                <small class="text-muted">⚡ Работаем без выходных и перерывов</small>
                             </div>
                         </div>
                     </div>
@@ -90,15 +91,18 @@
                             <div class="row g-3 text-center">
                                 <div class="col-6">
                                     <div class="h5">💕</div>
-                                    <small>Романтический ужин</small>
+                                    <small>
+                                        {% get_content 'contacts_services_romantic' 'НАЗВАНИЕ УСЛУГИ - романтический ужин' %}
+                                    </small>
                                 </div>
                                 <div class="col-6">
                                     <div class="h5">💼</div>
-                                    <small>Корпоративное обслуживание</small>
+                                    <small>
+                                        {% get_content 'contacts_services_corporate' 'НАЗВАНИЕ УСЛУГИ - корпоративное обслуживание' %}
+                                    </small>
                                 </div>
                             </div>
                             <div class="text-center mt-4">
-                                <small class="text-muted">Все вопросы по телефону: +7 (495) 123-45-68</small>
                             </div>
                         </div>
                     </div>
@@ -114,23 +118,31 @@
                     <div class="row g-3">
                         <div class="col-md-3 col-6">
                             <div class="h4">😊</div>
-                            <small>Уютная атмосфера</small>
+                            <small>
+                                {% get_content 'contacts_atmosphere' 'ОПИСАНИЕ ПРЕИМУЩЕСТВА - атмосфера' %}
+                            </small>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="h4">🍽️</div>
-                            <small>Авторская кухня</small>
+                            <small>
+                                {% get_content 'contacts_cuisine' 'ОПИСАНИЕ ПРЕИМУЩЕСТВА - кухня' %}
+                            </small>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="h4">👨‍🍳</div>
-                            <small>Шеф-повар с мишленовским опытом</small>
+                            <small>
+                                {% get_content 'contacts_chef' 'ОПИСАНИЕ ПРЕИМУЩЕСТВА - шеф-повар' %}
+                            </small>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="h4">⭐</div>
-                            <small>Премиальное обслуживание</small>
+                            <small>
+                                {% get_content 'contacts_service' 'ОПИСАНИЕ ПРЕИМУЩЕСТВА - обслуживание' %}
+                            </small>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <small class="text-muted">Ждем вас в гости за незабываемыми гастрономическими впечатлениями!</small>
+
                     </div>
                 </div>
             </div>
