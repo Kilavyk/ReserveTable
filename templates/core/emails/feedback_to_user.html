@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
+        .content { padding: 20px 0; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Gourmet Haven</h2>
+            <p>Благодарим за обратную связь!</p>
+        </div>
+
+<div class="content">
+    <p>Уважаемый(ая) {% if name != "Не указано" %}<strong>{{ name }}</strong>{% else %}клиент{% endif %},</p>
+
+    <p>Благодарим вас за обратную связь! Мы получили ваше сообщение и рассмотрим его в ближайшее время.</p>
+
+    <p>При необходимости мы свяжемся с вами по указанным контактным данным.</p>
+
+    <p>Если у вас есть срочные вопросы, вы всегда можете связаться с нами по телефону: <strong>+7 (495) 123-45-67</strong></p>
+</div>
+
+        <div class="footer">
+            <p>С уважением,<br>
+            Команда ресторана Gourmet Haven</p>
+
+            <p><strong>Контакты:</strong><br>
+            г. Москва, ул. Гастрономическая, д. 10<br>
+            Телефон: +7 (495) 123-45-67<br>
+            Email: info@gourmethaven.ru</p>
+
+            <p><small>Это письмо было отправлено автоматически. Пожалуйста, не отвечайте на него.</small></p>
+        </div>
+    </div>
+</body>
+</html>

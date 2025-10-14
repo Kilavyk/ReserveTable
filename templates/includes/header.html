@@ -1,0 +1,132 @@
+<nav class="navbar navbar-expand-lg navbar-transparent">
+  <div class="container position-relative">
+    <!-- Бренд или логотип (можно оставить пустым) -->
+    <a class="navbar-brand d-lg-none" href="{% url 'bookings:booking_view' %}" style="color: white !important;">Забронировать столик</a>
+
+    <!-- Бургер-кнопка (белая) -->
+    <button class="navbar-toggler navbar-toggler-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Все пункты меню (скрываются на мобильных) -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <!-- Левая часть -->
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'core:index' %}">Главная</a>
+        </li>
+
+        <!-- Администрирование -->
+        {% if user.is_authenticated and user.groups.exists or user.is_staff %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bookings:admin_panel' %}">Администрирование</a>
+        </li>
+        {% endif %}
+      </ul>
+
+      <!-- Центральные ссылки (на десктопе — по центру, на мобильных — в потоке) -->
+      <ul class="navbar-nav mx-lg-auto d-none d-lg-flex position-absolute start-50 translate-middle-x">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'core:about' %}">История</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'victuals:menu' %}">Меню</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'core:contacts' %}">Контакты</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bookings:booking_view' %}">Забронировать столик</a>
+        </li>
+      </ul>
+
+      <!-- На мобильных центральные ссылки показываем отдельно (в потоке) -->
+      <ul class="navbar-nav d-lg-none">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'core:about' %}">История</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'victuals:menu' %}">Меню</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'core:contacts' %}">Контакты</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bookings:booking_view' %}">Забронировать столик</a>
+        </li>
+      </ul>
+
+      <!-- Правая часть -->
+      <ul class="navbar-nav ms-auto">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'users:profile' %}">
+              {% if user.first_name or user.last_name %}
+                {{ user.first_name|default:"" }} {{ user.last_name|default:"" }}
+              {% else %}
+                {{ user.email }}
+              {% endif %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'users:logout' %}">Выйти</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#authModal">Войти</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Подключаем модальные окна авторизации -->
+{% include 'includes/modals/auth_modals.html' %}
+
+<style>
+  /* Делаем бургер-кнопку белой */
+  .navbar-toggler-white .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  }
+</style>
+
+<script>
+  function switchToRegister() {
+    const loginModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
+    if (loginModal) {
+      loginModal.hide();
+    }
+    const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+    registerModal.show();
+  }
+
+  function switchToLogin() {
+    const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+    if (registerModal) {
+      registerModal.hide();
+    }
+    const loginModal = new bootstrap.Modal(document.getElementById('authModal'));
+    loginModal.show();
+  }
+
+  // Автоматическое открытие модальных окон при ошибках
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if messages %}
+      {% for message in messages %}
+        {% if 'error' in message.tags %}
+          const hasRegistrationError = {% if request.POST.password2 %}true{% else %}false{% endif %};
+
+          if (hasRegistrationError) {
+            const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+            registerModal.show();
+          } else {
+            const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+            authModal.show();
+          }
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  });
+</script>

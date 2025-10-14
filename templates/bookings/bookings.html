@@ -1,0 +1,289 @@
+<!-- templates/Bookings/bookings.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование столиков — Gourmet Haven</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+{% include 'includes/header.html' %}
+<main class="container my-5">
+    <div class="content-box">
+        <h1 class="text-center mb-0">Бронирование столиков</h1>
+
+        <!-- Вывод сообщений -->
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <!-- Форма поиска столиков -->
+        <section class="search-section">
+            <form method="GET" action="" class="row g-3">
+                <div class="col-md-4">
+                    <label for="date" class="form-label">Дата бронирования:</label>
+                    <input type="date"
+                           id="date"
+                           name="date"
+                           class="form-control"
+                           value="{{ selected_date|date:'Y-m-d' }}"
+                           min="{{ today|date:'Y-m-d' }}"
+                           required>
+                </div>
+                <div class="col-md-3">
+                    <label for="time_slot" class="form-label">Время:</label>
+                    <select id="time_slot" name="time_slot" class="form-select" required>
+                        {% for slot_value, slot_display in time_slots %}
+                        <option value="{{ slot_value|time:'H:i' }}"
+                                {% if selected_time_slot == slot_value %}selected{% endif %}>
+                            {{ slot_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="guests_count" class="form-label">Количество гостей:</label>
+                    <input type="number"
+                           id="guests_count"
+                           name="guests_count"
+                           class="form-control"
+                           value="{{ guests_count }}"
+                           min="1"
+                           max="20"
+                           required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    {% if user.is_authenticated %}
+                    <button type="submit" class="btn btn-primary w-100">
+                        Найти столики
+                    </button>
+                    {% else %}
+                    <button type="button"
+                            class="btn btn-primary w-100"
+                            data-bs-toggle="modal"
+                            data-bs-target="#authModal">
+                        Войти
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+
+        </section>
+
+        <div class="mb-5"></div>
+        <!-- Результаты поиска -->
+        {% if request.GET.guests_count %}
+        <section class="results-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 mb-0">Доступные столики</h2>
+                <div class="badge bg-{% if available_tables_count > 0 %}success{% else %}danger{% endif %} fs-6">
+                    Найдено: {{ available_tables_count }} столиков
+                </div>
+            </div>
+            {% if available_tables_count > 0 %}
+            <div class="row g-3">
+                {% for table_data in tables_data %}
+                {% if table_data.is_available %}
+                <div class="col-12">
+                    <div class="card table-card shadow-sm"
+                         data-table-id="{{ table_data.table.id }}"
+                         data-table-number="{{ table_data.table.number }}"
+                         data-table-description="{{ table_data.table.description }}"
+                         data-table-max-guests="{{ table_data.table.max_guests }}"
+                         data-time-slot="{{ table_data.time_slot|time:'H:i' }}"
+                         data-time-slot-display="{{ table_data.time_slot_display }}"
+                         onclick="showBookingModal(this)"
+                         style="cursor: pointer;">
+                        <!-- Выравнивания в строку -->
+                        <div class="card-body d-flex align-items-center">
+                            <!-- Блок "Столик №" -->
+                            <div class="d-flex flex-column justify-content-center me-3" style="min-width: 100px;">
+                                <h6 class="card-text table-number mb-0">Столик №{{ table_data.table.number }}</h6>
+                            </div>
+                            <!-- Блок "Описание" -->
+                            <div class="d-flex flex-column justify-content-center me-3 flex-grow-1">
+                                <p class="card-text table-description mb-0">{{ table_data.table.description }}</p>
+                            </div>
+                            <!-- Блок "до X гостей" -->
+                            <div class="d-flex flex-column justify-content-center me-3" style="min-width: 150px;">
+                                <small class="text-muted guests-info">до {{ table_data.table.max_guests }}
+                                    гостей</small>
+                            </div>
+                            <!-- Блок "Время" -->
+                            <div class="d-flex flex-column justify-content-center">
+        <span class="badge bg-success single-time-slot fs-6">
+            {{ table_data.time_slot_display }}
+        </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning text-center py-4">
+                <h4 class="alert-heading">Подходящих столиков не найдено</h4>
+                <p class="mb-0">Попробуйте изменить параметры поиска: выбрать другую дату, время или уменьшить
+                    количество гостей.</p>
+            </div>
+            {% endif %}
+        </section>
+        {% else %}
+        <div class="alert alert-info text-center py-4">
+            <h5 class="alert-heading">Заполните параметры бронирования</h5>
+
+            <p class="mb-0">Выберите дату, время и количество гостей и нажмите "Найти столики" чтобы увидеть доступные
+                варианты</p>
+            <p class="mb-0"> В нашем ресторане действует стандартное время бронирования — 2 часа </p>
+        </div>
+        {% endif %}
+    </div>
+</main>
+<!-- Модальное окно для бронирования -->
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookingModalLabel">Детали бронирования</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'bookings:create_booking' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="modalTableId" name="table_id">
+                    <input type="hidden" id="modalBookingDate" name="booking_date">
+                    <input type="hidden" id="modalTimeSlot" name="time_slot">
+                    <input type="hidden" name="guests_count" id="modalGuestsCount">
+
+                    <!-- Поле выбора пользователя (только для администраторов) -->
+                    {% if user.groups.exists or user.is_staff%}
+                    <div class="mb-3">
+                        <label for="modalUserId" class="form-label">Бронирование для пользователя:</label>
+                        <select id="modalUserId" name="user_id" class="form-select">
+                            <option value="{{ user.id }}" selected>Себя ({{ user.email }})</option>
+                            {% for user_obj in all_users %}
+                            {% if user_obj.id != user.id %}
+                            <option value="{{ user_obj.id }}">
+                                {{ user_obj.get_full_name|default:user_obj.email }} - {{ user_obj.email }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Вы можете забронировать столик для другого пользователя</div>
+                    </div>
+                    {% else %}
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    {% endif %}
+
+                    <!-- Сводка бронирования -->
+                    <div class="bg-light p-3 rounded mb-3">
+                        <div class="mb-2">
+                            <strong>Столик:</strong>
+                            <span id="modalTableInfo">Загрузка...</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Описание:</strong>
+                            <span id="modalTableDescription">Загрузка...</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Дата:</strong>
+                            <span id="modalBookingDateDisplay">Загрузка...</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Время:</strong>
+                            <span id="modalTimeSlotDisplay">Загрузка...</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Гости:</strong>
+                            <span id="modalGuestsCountDisplay">Загрузка...</span>
+                        </div>
+                    </div>
+                    <!-- Особые пожелания -->
+                    <div class="mb-3">
+                        <label class="form-label">Особые пожелания:</label>
+                        <textarea name="special_requests" class="form-control" rows="3"
+                                  placeholder="Укажите дополнительные пожелания (необязательно)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="row w-100 g-2">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Отмена
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-primary w-100">Забронировать</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% include 'includes/footer.html' %}
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    {% for message in messages %}
+        {% if message.tags == 'info' and 'авторизоваться' in message.message %}
+            // Открываем модальное окно авторизации
+            const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+            authModal.show();
+        {% endif %}
+    {% endfor %}
+});
+
+    function showBookingModal(cardElement) {
+        const tableId = cardElement.getAttribute('data-table-id');
+        const tableNumber = cardElement.getAttribute('data-table-number');
+        const tableDescription = cardElement.getAttribute('data-table-description');
+        const maxGuests = parseInt(cardElement.getAttribute('data-table-max-guests'));
+        const timeSlot = cardElement.getAttribute('data-time-slot');
+        const timeSlotDisplay = cardElement.getAttribute('data-time-slot-display');
+        const selectedDate = '{{ selected_date|date:"Y-m-d" }}';
+        const guestsCount = parseInt('{{ guests_count }}');
+
+        document.getElementById('modalTableId').value = tableId;
+        document.getElementById('modalTimeSlot').value = timeSlot;
+        document.getElementById('modalTableInfo').textContent = '№' + tableNumber;
+        document.getElementById('modalTableDescription').textContent = tableDescription;
+        document.getElementById('modalBookingDateDisplay').textContent = formatDate(selectedDate);
+        document.getElementById('modalBookingDate').value = selectedDate;
+        document.getElementById('modalTimeSlotDisplay').textContent = timeSlotDisplay;
+        document.getElementById('modalGuestsCountDisplay').textContent = guestsCount + ' гостей';
+        document.getElementById('modalGuestsCount').value = guestsCount;
+
+        if (guestsCount > maxGuests) {
+            document.getElementById('modalGuestsCountDisplay').textContent = maxGuests + ' гостей (автоматически уменьшено)';
+            document.getElementById('modalGuestsCount').value = maxGuests;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        modal.show();
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').setAttribute('min', today);
+    });
+</script>
+</body>
+</html>

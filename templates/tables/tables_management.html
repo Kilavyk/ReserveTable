@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление столиками - Админ-панель</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+    <!-- Включаем основной хедер -->
+    {% include 'includes/header.html' %}
+
+    <!-- Включаем навигацию админ-панели -->
+    {% include 'includes/admin_navbar.html' %}
+
+    <div class="container" style="max-width: 1000px;">
+        <!-- Заголовок и кнопка добавления -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Управление столиками</h1>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTableModal">
+                + Добавить столик
+            </button>
+        </div>
+
+        <!-- Таблица столиков -->
+        <div class="card">
+            <div class="card-body p-0">
+                {% if tables %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Номер столика</th>
+                                <th>Вместимость</th>
+                                <th>Описание</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for table in tables %}
+                            <tr>
+                                <td>
+                                    <strong>№{{ table.number }}</strong>
+
+                                    <small class="text-muted">ID: {{ table.id }}</small>
+                                </td>
+                                <td>до {{ table.max_guests }} гостей</td>
+                                <td>
+                                    {% if table.description %}
+                                        {{ table.description }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if table.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if table.is_active %}Активен{% else %}Неактивен{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline-primary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editTableModal"
+                                                data-table-id="{{ table.id }}"
+                                                data-table-number="{{ table.number }}"
+                                                data-table-max-guests="{{ table.max_guests }}"
+                                                data-table-description="{{ table.description|default:'' }}"
+                                                data-table-is-active="{{ table.is_active }}">
+                                            Редактировать
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteTableModal"
+                                                data-table-id="{{ table.id }}"
+                                                data-table-number="{{ table.number }}">
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <h5>Нет столиков</h5>
+                    <p class="text-muted mb-0">Нажмите "Добавить столик" чтобы создать первый столик.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления столика -->
+    <div class="modal fade" id="addTableModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить столик</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'tables:add_table' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="tableNumber" class="form-label">Номер столика *</label>
+                            <input type="text" class="form-control" id="tableNumber" name="number" required
+                                   placeholder="Например: 1, 2, A1, B2">
+                        </div>
+                        <div class="mb-3">
+                            <label for="maxGuests" class="form-label">Максимальное количество гостей *</label>
+                            <select class="form-select" id="maxGuests" name="max_guests" required>
+                                {% for i in "123456789" %}
+                                <option value="{{ forloop.counter }}" {% if forloop.counter == 2 %}selected{% endif %}>
+                                    {{ forloop.counter }} гостей
+                                </option>
+                                {% endfor %}
+                                <option value="10">10 гостей</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tableDescription" class="form-label">Описание</label>
+                            <textarea class="form-control" id="tableDescription" name="description" rows="3"
+                                      placeholder="Необязательное описание столика..."></textarea>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                            <label class="form-check-label" for="isActive">
+                                Активный столик
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-success">Добавить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования столика -->
+    <div class="modal fade" id="editTableModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать столик</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'tables:edit_table' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="editTableId" name="table_id">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="editTableNumber" class="form-label">Номер столика *</label>
+                            <input type="text" class="form-control" id="editTableNumber" name="number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMaxGuests" class="form-label">Максимальное количество гостей *</label>
+                            <select class="form-select" id="editMaxGuests" name="max_guests" required>
+                                {% for i in "123456789" %}
+                                <option value="{{ forloop.counter }}">{{ forloop.counter }} гостей</option>
+                                {% endfor %}
+                                <option value="10">10 гостей</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTableDescription" class="form-label">Описание</label>
+                            <textarea class="form-control" id="editTableDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                            <label class="form-check-label" for="editIsActive">
+                                Активный столик
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно удаления столика -->
+    <div class="modal fade" id="deleteTableModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Удалить столик</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'tables:delete_table' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="deleteTableId" name="table_id">
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить столик <strong id="deleteTableNumber"></strong>?</p>
+                        <p class="text-danger"><small>Это действие нельзя отменить. Все связанные бронирования также будут удалены.</small></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключение JavaScript -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        // Обработка модального окна редактирования
+        document.addEventListener('DOMContentLoaded', function() {
+            const editModal = document.getElementById('editTableModal');
+            if (editModal) {
+                editModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const tableId = button.getAttribute('data-table-id');
+                    const tableNumber = button.getAttribute('data-table-number');
+                    const maxGuests = button.getAttribute('data-table-max-guests');
+                    const description = button.getAttribute('data-table-description');
+                    const isActive = button.getAttribute('data-table-is-active') === 'True';
+
+                    document.getElementById('editTableId').value = tableId;
+                    document.getElementById('editTableNumber').value = tableNumber;
+                    document.getElementById('editMaxGuests').value = maxGuests;
+                    document.getElementById('editTableDescription').value = description;
+                    document.getElementById('editIsActive').checked = isActive;
+                });
+            }
+
+            // Обработка модального окна удаления
+            const deleteModal = document.getElementById('deleteTableModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const tableId = button.getAttribute('data-table-id');
+                    const tableNumber = button.getAttribute('data-table-number');
+
+                    document.getElementById('deleteTableId').value = tableId;
+                    document.getElementById('deleteTableNumber').textContent = '№' + tableNumber;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

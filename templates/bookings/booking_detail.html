@@ -1,0 +1,289 @@
+<!-- templates/Bookings/booking_detail.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали бронирования #{{ booking.id }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <style>
+
+
+    </style>
+</head>
+<body>
+{% include 'includes/header.html' %}
+
+<div class="container mt-4" style="max-width: 1000px;"
+">
+<!-- Хлебные крошки -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'bookings:admin_panel' %}">Панель администратора</a></li>
+        <li class="breadcrumb-item active">Бронирование #{{ booking.id }}</li>
+    </ol>
+</nav>
+
+<!-- Заголовок и действия в одной строке -->
+<div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
+    <div class="d-flex align-items-center">
+        <h1 class="h3 mb-0 me-3">Бронирование #{{ booking.id }}</h1>
+        <span class="badge
+                    {% if booking.status == 'confirmed' %}bg-success
+                    {% elif booking.status == 'pending' %}bg-warning text-dark
+                    {% else %}bg-danger{% endif %}">
+                    {{ booking.get_status_display }}
+                </span>
+    </div>
+
+    <!-- Кнопки действий -->
+    {% if not booking.is_past %}
+    <div class="d-flex align-items-center">
+        <form method="post" class="d-flex">
+            {% csrf_token %}
+            {% if can_confirm %}
+            <button type="submit" name="action" value="confirm" class="btn btn-success action-btn">
+                Подтвердить
+            </button>
+            {% endif %}
+
+            {% if can_cancel %}
+            <button type="submit" name="action" value="cancel" class="btn btn-danger action-btn">
+                Отменить
+            </button>
+            {% endif %}
+        </form>
+        <a href="{% url 'bookings:admin_panel' %}?date={{ booking.booking_date|date:'Y-m-d' }}"
+           class="btn btn-outline-secondary action-btn ms-2">
+            ← Назад
+        </a>
+    </div>
+    {% else %}
+    <div class="d-flex align-items-center">
+        <span class="text-muted me-3">Прошедшее бронирование</span>
+        <a href="{% url 'bookings:admin_panel' %}?date={{ booking.booking_date|date:'Y-m-d' }}"
+           class="btn btn-outline-secondary action-btn">
+            ← Назад
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Две колонки с информацией -->
+<div class="row">
+    <!-- Колонка 1: Информация о столике -->
+    <div class="col-md-6 mb-4">
+        <div class="card  h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Информация о бронировании</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group-item">
+                    <strong>Столик:</strong>
+                    <span class="float-end">
+                                <strong>№{{ booking.table.number }}</strong>
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Дата:</strong>
+                    <span class="float-end">
+                                {{ booking.booking_date|date:"d.m.Y" }}<br>
+
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Время:</strong>
+                    <span class="float-end">
+                                {{ booking.get_time_slot_display }}<br>
+
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Количество гостей:</strong>
+                    <span class="float-end">
+                                <span>{{ booking.guests_count }} человек</span>
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Вместимость столика:</strong>
+                    <span class="float-end">
+                                до {{ booking.table.max_guests }} гостей
+                            </span>
+                </div>
+
+
+                <div class="list-group-item">
+                    <strong>Создано:</strong>
+                    <span class="float-end">
+                                {{ booking.created_at|date:"d.m.Y H:i" }}
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Обновлено:</strong>
+                    <span class="float-end">
+                                {{ booking.updated_at|date:"d.m.Y H:i" }}
+                            </span>
+                </div>
+
+                {% if booking.table.description %}
+                <div class="list-group-item">
+                    <strong>Описание столика:</strong>
+                    <span class="float-end text-end">
+                                <small class="text-muted">{{ booking.table.description }}</small>
+                            </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Колонка 2: Информация о пользователе -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Информация о клиенте</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group-item">
+                    <strong>Имя и фамилия:</strong>
+                    <span class="float-end">
+                                {% if booking.user.get_full_name %}
+                                    {{ booking.user.get_full_name }}
+                                {% else %}
+                                    <span class="text-muted">Не указано</span>
+                                {% endif %}
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Email:</strong>
+                    <span class="float-end">
+                                {{ booking.user.email }}
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Телефон:</strong>
+                    <span class="float-end">
+                                {% if booking.user.phone_number %}
+                                    {{ booking.user.phone_number }}
+                                {% else %}
+                                    <span class="text-muted">Не указан</span>
+                                {% endif %}
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>ID пользователя:</strong>
+                    <span class="float-end">
+                                <code>#{{ booking.user.id }}</code>
+                            </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Дата регистрации:</strong>
+                    <span class="float-end">
+                    {{ booking.user.date_joined|date:"d.m.Y H:i" }}
+                     </span>
+                </div>
+
+                <div class="list-group-item">
+                    <strong>Статус аккаунта:</strong>
+                    <span class="float-end">
+                                {% if booking.user.is_active %}
+                                    <span>Активен</span>
+                                {% else %}
+                                    <span>Неактивен</span>
+                                {% endif %}
+                            </span>
+                </div>
+
+                {% if booking.user.photo %}
+                <div class="list-group-item">
+                    <strong>Фотография:</strong>
+                    <span class="float-end">
+                                <img src="{{ booking.user.photo.url }}"
+                                     alt="Фото пользователя"
+                                     class="rounded-circle"
+                                     style="width: 50px; height: 50px; object-fit: cover;">
+                            </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Особые пожелания -->
+{% if booking.special_requests %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Особые пожелания</h5>
+            </div>
+            <div class="card-body">
+
+                <p class="mb-0">{{ booking.special_requests }}</p>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Подсказки и информация -->
+{% if not booking.is_past %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6>💡 Информация:</h6>
+            <p class="mb-0 small">
+                {% if booking.status == 'pending' %}
+                Бронирование ожидает подтверждения. Вы можете подтвердить его или отменить.
+                {% elif booking.status == 'confirmed' %}
+                Бронирование подтверждено. Вы можете отменить его если необходимо.
+                {% elif booking.status == 'cancelled' %}
+                Бронирование отменено и не может быть изменено.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- Подключение JavaScript -->
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+<script>
+    // Подтверждение действий
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmBtn = document.querySelector('button[value="confirm"]');
+        const cancelBtn = document.querySelector('button[value="cancel"]');
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function(e) {
+                if (!confirm('Вы уверены, что хотите подтвердить это бронирование?')) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function(e) {
+                if (!confirm('Вы уверены, что хотите отменить это бронирование? Клиент будет уведомлен.')) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

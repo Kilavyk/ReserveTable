@@ -1,0 +1,280 @@
+<!-- Модальное окно авторизации -->
+<div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title mx-auto" id="authModalLabel">Вход в аккаунт</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Блок для отображения сообщений об ошибках авторизации -->
+        {% for message in messages %}
+          {% if 'error' in message.tags and not 'register' in message.tags and not 'password_reset' in message.tags %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <form method="post" action="{% url 'users:login' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email"
+                   class="form-control"
+                   id="email"
+                   name="username"
+                   placeholder="your@email.com"
+                   required>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Пароль</label>
+            <input type="password"
+                   class="form-control"
+                   id="password"
+                   name="password"
+                   placeholder="Введите пароль"
+                   required>
+          </div>
+
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-primary" style="background-color: #8B4513; border-color: #8B4513;">
+              Войти
+            </button>
+          </div>
+        </form>
+
+        <div class="text-center">
+          <p class="mb-1">
+            Нет аккаунта?
+            <a href="#" class="text-decoration-none" style="color: #8B4513;" onclick="switchToRegister()">Регистрация</a>
+          </p>
+          <p class="mb-0">
+            <a href="#" class="text-decoration-none" style="color: #8B4513;" onclick="switchToPasswordReset()">Забыли пароль?</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно регистрации -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title mx-auto" id="registerModalLabel">Регистрация</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Блок для отображения сообщений об ошибках регистрации -->
+        {% for message in messages %}
+          {% if 'error' in message.tags and not 'password_reset' in message.tags %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <form method="post" action="{% url 'users:register' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+
+          <div class="mb-3">
+            <label for="reg_email" class="form-label">Email *</label>
+            <input type="email"
+                   class="form-control"
+                   id="reg_email"
+                   name="email"
+                   placeholder="your@email.com"
+                   required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="first_name" class="form-label">Имя</label>
+              <input type="text"
+                     class="form-control"
+                     id="first_name"
+                     name="first_name"
+                     placeholder="Ваше имя">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="last_name" class="form-label">Фамилия</label>
+              <input type="text"
+                     class="form-control"
+                     id="last_name"
+                     name="last_name"
+                     placeholder="Ваша фамилия">
+            </div>
+          </div>
+
+          <div class="mb-3">
+    <label for="phone_number" class="form-label">Номер телефона</label>
+    <input type="tel"
+           class="form-control"
+           id="phone_number"
+           name="phone_number"
+           placeholder="+7 (XXX) XXX-XX-XX">
+    <div class="form-text">Необязательное поле. Для связи с вами.</div>
+</div>
+
+          <div class="mb-3">
+            <label for="reg_password" class="form-label">Пароль *</label>
+            <input type="password"
+                   class="form-control"
+                   id="reg_password"
+                   name="password1"
+                   placeholder="Введите пароль"
+                   required>
+          </div>
+
+          <div class="mb-3">
+            <label for="reg_password_confirm" class="form-label">Подтвердите пароль *</label>
+            <input type="password"
+                   class="form-control"
+                   id="reg_password_confirm"
+                   name="password2"
+                   placeholder="Подтвердите пароль"
+                   required>
+          </div>
+
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-primary" style="background-color: #8B4513; border-color: #8B4513;">
+              Зарегистрироваться
+            </button>
+          </div>
+
+          <div class="text-muted small">
+            <p>* Обязательные поля для заполнения</p>
+            <p>После регистрации вам будет отправлено письмо для подтверждения email</p>
+          </div>
+        </form>
+
+        <div class="text-center">
+          <p class="mb-0">
+            Уже есть аккаунт?
+            <a href="#" class="text-decoration-none" style="color: #8B4513;" onclick="switchToLogin()">Войти</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно восстановления пароля -->
+<div class="modal fade" id="passwordResetModal" tabindex="-1" aria-labelledby="passwordResetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title mx-auto" id="passwordResetModalLabel">Восстановление пароля</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Блок для отображения сообщений -->
+        {% for message in messages %}
+          {% if 'password_reset' in message.tags %}
+            <div class="alert {% if 'success' in message.tags %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <!-- Форма запроса сброса пароля -->
+        <div id="passwordResetRequestForm">
+          <p class="text-muted mb-3">Введите ваш email, и мы вышлем вам инструкции для восстановления пароля.</p>
+          <form method="post" action="{% url 'users:password_reset_request' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+
+            <div class="mb-3">
+              <label for="reset_email" class="form-label">Email</label>
+              <input type="email"
+                     class="form-control"
+                     id="reset_email"
+                     name="email"
+                     placeholder="your@email.com"
+                     required>
+            </div>
+
+            <div class="d-grid mb-3">
+              <button type="submit" class="btn btn-primary" style="background-color: #8B4513; border-color: #8B4513;">
+                Отправить инструкции
+              </button>
+            </div>
+          </form>
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Функции переключения между модальными окнами
+function switchToRegister() {
+  const loginModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
+  if (loginModal) {
+    loginModal.hide();
+  }
+  const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+  registerModal.show();
+}
+
+function switchToLogin() {
+  const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+  const resetModal = bootstrap.Modal.getInstance(document.getElementById('passwordResetModal'));
+
+  if (registerModal) {
+    registerModal.hide();
+  }
+  if (resetModal) {
+    resetModal.hide();
+  }
+  const loginModal = new bootstrap.Modal(document.getElementById('authModal'));
+  loginModal.show();
+}
+
+function switchToPasswordReset() {
+  const loginModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
+  if (loginModal) {
+    loginModal.hide();
+  }
+  const resetModal = new bootstrap.Modal(document.getElementById('passwordResetModal'));
+  resetModal.show();
+}
+
+// Автоматическое открытие модальных окон при ошибках
+document.addEventListener('DOMContentLoaded', function() {
+  {% if messages %}
+    {% for message in messages %}
+      {% if 'error' in message.tags %}
+        // Проверяем, была ли попытка регистрации по наличию полей регистрации
+        const hasRegistrationError = {% if request.POST.password2 or request.POST.email %}true{% else %}false{% endif %};
+        const hasPasswordResetError = {% if request.POST.email and not request.POST.password2 %}true{% else %}false{% endif %};
+
+        if (hasRegistrationError) {
+          // Открываем модальное окно регистрации при ошибках регистрации
+          const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+          registerModal.show();
+        } else if (hasPasswordResetError) {
+          // Открываем модальное окно восстановления пароля при ошибках
+          const resetModal = new bootstrap.Modal(document.getElementById('passwordResetModal'));
+          resetModal.show();
+        } else {
+          // Открываем модальное окно авторизации при ошибках входа
+          const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+          authModal.show();
+        }
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+});
+</script>

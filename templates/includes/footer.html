@@ -1,0 +1,12 @@
+<!-- templates/includes/footer.html -->
+{% load content_tags %}
+<footer class="bg-dark text-light py-4 mt-5">
+  <div class="container text-center">
+    <p class="mb-0">
+        {% get_content 'footer_copyright' 'ФУТЕР - ТЕКСТ КОПИРАЙТА' %}
+    </p>
+    <p class="mb-0">
+        {% get_content 'footer_tagline' 'ФУТЕР - СЛОГАН ИЛИ ДОПОЛНИТЕЛЬНЫЙ ТЕКСТ' %}
+    </p>
+  </div>
+</footer>

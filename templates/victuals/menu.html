@@ -1,0 +1,139 @@
+<!-- templates/core/menu.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Меню — Gourmet Haven</title>
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <style>
+    .price-tag {
+      color: #d4a017;
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+    .dish-badge {
+      background: #28a745;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      margin-bottom: 5px;
+      display: inline-block;
+    }
+    .menu-category {
+      margin-bottom: 3rem;
+    }
+    .category-icon {
+      margin-right: 10px;
+    }
+    .card {
+      border: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    .menu-item h4 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    .menu-item p {
+      color: #6c757d;
+      line-height: 1.5;
+    }
+    .text-outline {
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+    {% include 'includes/header.html' %}
+
+    <div class="container mt-5" >
+        <div class="content-box " >
+            <h1 class="text-center mb-4 text-outline">Наше Меню</h1>
+
+            {% for category in categories %}
+            <section class="menu-category">
+                <h2 class="mb-3 text-outline">
+                    <span class="category-icon">
+                        {% if category.name == "Холодные закуски" %}🥗
+                        {% elif category.name == "Салаты" %}🥙
+                        {% elif category.name == "Супы" %}🍲
+                        {% elif category.name == "Горячие блюда" %}🍖
+                        {% elif category.name == "Гарниры" %}🍟
+                        {% elif category.name == "Десерты" %}🍰
+                        {% elif category.name == "Горячие напитки" %}☕
+                        {% elif category.name == "Холодные напитки" %}🥤
+                        {% elif category.name == "Алкогольные напитки" %}🍷
+                        {% else %}🍽️
+                        {% endif %}
+                    </span>{{ category.name }}
+                </h2>
+
+                {% for item in category.menuitem_set.all %}
+                  {% if item.is_available %}
+                  <div class="card mb-3">
+                      <div class="card-body">
+                          <div class="menu-item d-flex justify-content-between align-items-start">
+                              <div class="flex-grow-1">
+                                  <h4 class="mb-1">{{ item.name }}</h4>
+                                  <p class="mb-1">{{ item.description }}</p>
+                                  {% if item.ingredients %}
+                                  <p class="mb-0 small text-muted">
+                                      <strong>Состав:</strong> {{ item.ingredients }}
+                                  </p>
+                                  {% endif %}
+                                  {% if item.weight or item.volume %}
+                                  <p class="mb-0 small text-muted">
+                                      {% if item.weight %}
+                                          <strong>Вес:</strong> {{ item.weight }} г
+                                      {% elif item.volume %}
+                                          <strong>Объем:</strong> {{ item.volume }} мл
+                                      {% endif %}
+                                  </p>
+                                  {% endif %}
+                              </div>
+                              <div class="ms-3 text-end">
+                                  {% if item.dish_type == 'food' %}
+                                    {% if 'стейк' in item.name.lower or 'стейк' in item.description.lower %}
+                                    <span class="dish-badge">Новинка</span>
+                                    {% elif 'цезарь' in item.name.lower %}
+                                    <span class="dish-badge">Популярное</span>
+                                    {% elif item.name == 'Греческий салат' %}
+                                    <span class="dish-badge">Вегетарианское</span>
+                                    {% endif %}
+                                  {% endif %}
+                                  <div class="price-tag">{{ item.price }} ₽</div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  {% endif %}
+                {% empty %}
+                  <div class="alert alert-info">
+                    В этой категории пока нет доступных блюд.
+                  </div>
+                {% endfor %}
+            </section>
+            {% empty %}
+            <div class="alert alert-warning text-center">
+                <h4>Меню временно недоступно</h4>
+                <p>Пожалуйста, зайдите позже.</p>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
